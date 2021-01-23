@@ -501,6 +501,7 @@ int main(int argc, char *argv[])
 
 #ifdef USE_SDL2
     /* Attempt to use the "main-sdl2.cpp" support */
+    // 一応システム名は3文字にしておく
     if (!done && (!mstr || (streq(mstr, "sdl")))) {
         extern errr init_sdl2(int, char **);
         if (0 == init_sdl2(argc, argv)) {
