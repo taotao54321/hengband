@@ -254,6 +254,7 @@ static void display_usage(void)
 
 #ifdef USE_X11
     puts("  -mx11    To use X11");
+    puts("  -msdl    To use SDL2");
     puts("  --       Sub options");
     puts("  -- -d    Set display name");
     puts("  -- -o    Request old 8x8 tile graphics");
@@ -493,6 +494,17 @@ int main(int argc, char *argv[])
         extern errr init_x11(int, char **);
         if (0 == init_x11(argc, argv)) {
             ANGBAND_SYS = "x11";
+            done = TRUE;
+        }
+    }
+#endif
+
+#ifdef USE_SDL2
+    /* Attempt to use the "main-sdl2.cpp" support */
+    if (!done && (!mstr || (streq(mstr, "sdl")))) {
+        extern errr init_sdl2(int, char **);
+        if (0 == init_sdl2(argc, argv)) {
+            ANGBAND_SYS = "sdl";
             done = TRUE;
         }
     }

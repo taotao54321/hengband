@@ -15,7 +15,7 @@ esac])
 AC_SUBST(GAMEGROUP)
 AM_CONDITIONAL(SET_GID, test "$GAMEGROUP" != "")
 
-AC_LANG_C
+AC_LANG([C])
 
 dnl generate the installation path for the ./lib/ folder
 if test "$GAMEGROUP" != ""; then
@@ -55,6 +55,7 @@ AC_ARG_ENABLE(fontset,
 [  --disable-fontset       disable fontset support], use_fontset=no, use_fontset=yes)
 AC_ARG_ENABLE([xft],
 	AS_HELP_STRING([--enable-xft], [Enable xft support]))
+AC_ARG_ENABLE([sdl2], AS_HELP_STRING([--enable-sdl2], [Enable sdl2 support]))
 AC_ARG_ENABLE(worldscore,
 [  --disable-worldscore    disable worldscore support], ,AC_DEFINE(WORLD_SCORE, 1, [Allow the game to send scores to the score server]))
 AC_ARG_ENABLE(chuukei,
@@ -117,6 +118,20 @@ if test "$use_japanese" != no; then
   if test x"$NKF" != x"yes"; then
     AC_MSG_ERROR([nkf is not found. Please install nkf.])
   fi
+fi
+
+if test "x$enable_sdl2" = "xyes"; then
+  AC_LANG_PUSH([C++])
+  AC_PROG_CXX
+  AX_CXX_COMPILE_STDCXX_17
+  AX_BOOST_BASE([1.70], , [AC_MSG_ERROR([Boost not found])])
+  PKG_CHECK_MODULES(FMT, [fmt])
+  PKG_CHECK_MODULES(SDL2, [sdl2])
+  PKG_CHECK_MODULES(SDL2_IMAGE, [SDL2_image])
+  PKG_CHECK_MODULES(SDL2_TTF, [SDL2_ttf])
+  PKG_CHECK_MODULES(FONTCONFIG, [fontconfig])
+  AC_DEFINE([USE_SDL2], [1], [Use SDL2])
+  AC_LANG_POP([C++])
 fi
 
 AC_HEADER_STDC
