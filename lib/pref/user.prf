@@ -21,6 +21,9 @@
 ?:[IOR [EQU $SYS xaw] [EQU $SYS x11]]
 %:user-x11.prf
 
+?:[EQU $SYS sdl]
+%:user-sdl.prf
+
 ?:[EQU $SYS gcu]
 %:user-gcu.prf
 
