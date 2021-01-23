@@ -346,6 +346,15 @@ concptr make_screen_dump(player_type *creature_ptr, void (*process_autopick_file
             case 0x7f:
                 c = (a == 0x09) ? '%' : '#';
                 break;
+#else
+            case 0x1f:
+                if (streq(ANGBAND_SYS, "sdl"))
+                    c = '.';
+                break;
+            case 0x7f:
+                if (streq(ANGBAND_SYS, "sdl"))
+                    c = (a == 0x09) ? '%' : '#';
+                break;
 #endif
             }
 

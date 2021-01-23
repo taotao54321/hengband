@@ -27,6 +27,9 @@
 ?:[IOR [EQU $SYS xaw] [EQU $SYS x11]]
 %:pref-x11.prf
 
+?:[EQU $SYS sdl]
+%:pref-sdl.prf
+
 ?:[EQU $SYS gcu]
 %:pref-gcu.prf
 

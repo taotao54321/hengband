@@ -1,0 +1,44 @@
+#=====================================================================
+# SDL2 ドライバ 壁画像表示用設定
+#
+# font-win.prf と同内容。
+#
+# 壁地形の色と内部コードを設定する。
+# ドライバ側で内部コードを壁画像に変換して表示している。
+# 内部コード値は EUC-JP と干渉しない。
+#=====================================================================
+
+### Terrain features ###
+
+# Floors (white / centered dot)
+
+#F:1:1/31:LIT
+
+# Invis traps (white / centered dot)
+
+#F:2:1/31:LIT
+
+# Magma (slate / solid block)
+
+F:50:2/127:LIT
+F:52:2/127:LIT
+
+# Quartz (light slate / solid block)
+
+F:51:9/127:LIT
+F:53:9/127:LIT
+
+# Secret door (white / solid block)
+
+F:48:1/127
+
+# Granite walls & permanent rock (white / solid block)
+
+F:56:1/127:LIT
+F:57:1/127:LIT
+F:58:1/127:LIT
+F:59:1/127:LIT
+F:60:15/127:LIT
+F:61:15/127:LIT
+F:62:15/127:LIT
+F:63:15/127:LIT

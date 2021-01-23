@@ -373,6 +373,19 @@ hengband_SOURCES = \
 	\
 	main.c main-x11.c main-gcu.c \
 	\
+	main-sdl2.cpp \
+	main-sdl2/asset.hpp \
+	main-sdl2/audio.cpp main-sdl2/audio.hpp \
+	main-sdl2/config.cpp main-sdl2/config.hpp \
+	main-sdl2/encoding.cpp main-sdl2/encoding.hpp \
+	main-sdl2/font.cpp main-sdl2/font.hpp \
+	main-sdl2/game-window.cpp main-sdl2/game-window.hpp \
+	main-sdl2/inifile.cpp main-sdl2/inifile.hpp \
+	main-sdl2/input.cpp main-sdl2/input.hpp \
+	main-sdl2/picojson.h \
+	main-sdl2/prelude.hpp \
+	main-sdl2/system.cpp main-sdl2/system.hpp \
+	\
 	main/angband-headers.c main/angband-headers.h \
 	main/angband-initializer.c main/angband-initializer.h \
 	main/game-data-initializer.c main/game-data-initializer.h \
@@ -902,9 +915,12 @@ EXTRA_DIST = \
 
 DEFAULT_INCLUDES = -I$(srcdir) -I$(top_builddir)/src 
 CFLAGS += $(XFT_CFLAGS) $(libcurl_CFLAGS)
-LIBS += $(XFT_LIBS) $(libcurl_LIBS)
+LIBS += $(XFT_LIBS) $(libcurl_LIBS) $(FMT_LIBS) $(SDL2_LIBS) $(SDL2_IMAGE_LIBS) $(SDL2_TTF_LIBS) $(SDL2_MIXER_LIBS) $(FONTCONFIG_LIBS)
+CXXFLAGS += $(FMT_CFLAGS) $(SDL2_CFLAGS) $(SDL2_IMAGE_CFLAGS) $(SDL2_TTF_CFLAGS) $(SDL2_MIXER_CFLAGS) $(FONTCONFIG_CFLAGS)
 COMPILE = $(srcdir)/gcc-wrap $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) 
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) 
 
 install-exec-hook:
 if SET_GID

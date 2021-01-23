@@ -1,0 +1,387 @@
+#=====================================================================
+# SDL2 ドライバ キー入力設定
+#
+# 変愚蛮怒の入力システムは、特殊キー(ファンクションキーやカーソルキー)を直接や
+# りとりしない。代わりに、ドライバが特殊キーをマクロトリガーに変換してゲーム側
+# へ送信する仕組みを設けている。本ファイルはそのための設定を記述する。
+#
+# まず、以下の形式でドライバからゲーム側へ送るマクロトリガーのフォーマットを指
+# 定する(<template> より後のフィールドは実質固定と考えてよい。ここをいじると自
+# 動拾いエディタの動作などに支障が出る):
+#
+#   T:<template>:CSA:control-:shift-:alt-
+#
+# 例(以下の説明ではこのフォーマットを使う):
+#
+#   T:&x#:CSA:control-:shift-:alt-
+#
+# <template> 内の '#' は入力キーを表す文字列で置換される。具体的には16進文字列
+# ("FF" など)であることが多いが、違う形式でも構わない。
+#
+# <template> 内の '&' は修飾キーを表す文字たちで置換される。具体的には 'C',
+# 'S', 'A' のうち0個以上が現れる(それぞれ Ctrl, Shift, Alt を表す)。
+#
+# 例えば、ドライバがカーソル左キーを文字列 "FFFF" で表すことにしたとする。この
+# ときユーザーが Shift+Left を入力すると、ドライバは以下の文字列をゲーム側へ送
+# る(ダブルクォートは含まない):
+#
+#   "\x1FSxFFFF\r"
+#
+# ここで、'\x1F' は特殊キー送信開始コード、'\r' は終端コードである。ゲーム側は
+# この文字列全体をマクロトリガーとして扱う。このトリガーはゲーム内でマクロを作
+# る際にも使えるし、本ファイル内でデフォルトの動作を割り当てることもできる。た
+# とえば、Shift+Left を「左へ走る」動作にしたければ
+#
+#   A:\e\e\\.4
+#   P:\x1FSxFFFF\r
+#
+# と書く。なお、\x1F の部分は ^_ とも書ける('^' は Ctrl 修飾を表し、次の文字の
+# 下位 5bit のみを取り出す。'_' == '\x5F' なので、結局 '\x1F' と等価になる)。
+#
+# さらに、ゲーム内で特殊キーを表示する文字列を以下の形式で指定する必要がある:
+#
+#   T:<name_game>:<name_driver>
+#
+# 例えば、以下のように書くと:
+#
+#   T:Left:FFFF
+#
+# ドライバが "FFFF" で表す特殊キーがゲーム内では \[Left] と表示されるようになる。
+# ただし、実質的に <name_game> は各特殊キーごとに固定である(例えばカーソル左キー
+# なら Left)。これを変更すると自動拾いエディタでの操作が効かなくなることがある。
+# 詳しくは input-key-acceptor.c の inkey_special() を参照。
+#
+# Alt キーなどに対応するため、ASCII 範囲のキーに対しても表示文字列を定義するの
+# が望ましい。
+#
+# ここに書き切れていない仕様もあるが、新規にドライバを書く際には無視してよいと
+# 思われるので省略。
+#=====================================================================
+
+# マクロトリガーフォーマット
+
+T:&x#:CSA:control-:shift-:alt-
+
+
+# 特殊キー
+
+T:F1:F1
+T:F2:F2
+T:F3:F3
+T:F4:F4
+T:F5:F5
+T:F6:F6
+T:F7:F7
+T:F8:F8
+T:F9:F9
+T:F10:F10
+T:F11:F11
+T:F12:F12
+T:F13:F13
+T:F14:F14
+T:F15:F15
+T:F16:F16
+T:F17:F17
+T:F18:F18
+T:F19:F19
+T:F20:F20
+T:F21:F21
+T:F22:F22
+T:F23:F23
+T:F24:F24
+
+T:Pause:Pause
+
+T:Insert:Insert
+
+T:Home:Home
+T:End:End
+
+T:Page_Up:Page_Up
+T:Page_Down:Page_Down
+
+T:Down:Down
+T:Left:Left
+T:Right:Right
+T:Up:Up
+
+T:KP_0:KP_0
+T:KP_1:KP_1
+T:KP_2:KP_2
+T:KP_3:KP_3
+T:KP_4:KP_4
+T:KP_5:KP_5
+T:KP_6:KP_6
+T:KP_7:KP_7
+T:KP_8:KP_8
+T:KP_9:KP_9
+T:KP_Comma:KP_Comma
+T:KP_Divide:KP_Divide
+T:KP_Enter:KP_Enter
+T:KP_Equals:KP_Equals
+T:KP_Minus:KP_Minus
+T:KP_Multiply:KP_Multiply
+T:KP_Period:KP_Period
+T:KP_Plus:KP_Plus
+
+
+# ASCII 制御文字 (Shift+BS なども使えるように)
+
+T:Backspace:Backspace
+T:Tab:Tab
+T:Enter:Enter
+T:Escape:Escape
+T:Delete:Delete
+
+
+# ASCII 表示可能文字
+
+T:Space:20
+T:!:21
+T:":22
+T:#:23
+T:$:24
+T:%:25
+T:&:26
+T:':27
+T:(:28
+T:):29
+T:*:2A
+T:+:2B
+T:,:2C
+T:-:2D
+T:.:2E
+T:/:2F
+T:0:30
+T:1:31
+T:2:32
+T:3:33
+T:4:34
+T:5:35
+T:6:36
+T:7:37
+T:8:38
+T:9:39
+T:\::3A
+T:;:3B
+T:<:3C
+T:=:3D
+T:>:3E
+T:?:3F
+T:@:40
+T:A:41
+T:B:42
+T:C:43
+T:D:44
+T:E:45
+T:F:46
+T:G:47
+T:H:48
+T:I:49
+T:J:4A
+T:K:4B
+T:L:4C
+T:M:4D
+T:N:4E
+T:O:4F
+T:P:50
+T:Q:51
+T:R:52
+T:S:53
+T:T:54
+T:U:55
+T:V:56
+T:W:57
+T:X:58
+T:Y:59
+T:Z:5A
+T:[:5B
+T:\\:5C
+T:]:5D
+T:\^:5E
+T:_:5F
+T:`:60
+T:a:61
+T:b:62
+T:c:63
+T:d:64
+T:e:65
+T:f:66
+T:g:67
+T:h:68
+T:i:69
+T:j:6A
+T:k:6B
+T:l:6C
+T:m:6D
+T:n:6E
+T:o:6F
+T:p:70
+T:q:71
+T:r:72
+T:s:73
+T:t:74
+T:u:75
+T:v:76
+T:w:77
+T:x:78
+T:y:79
+T:z:7A
+T:{:7B
+T:|:7C
+T:}:7D
+T:~:7E
+
+
+#---------------------------------------------------------------------
+# 特殊キーのデフォルト動作
+#---------------------------------------------------------------------
+
+# カーソルキー
+
+A:2
+P:^_xDown\r
+
+A:4
+P:^_xLeft\r
+
+A:6
+P:^_xRight\r
+
+A:8
+P:^_xUp\r
+
+# Shift + カーソルキー
+
+A:\e\e\\.2
+P:^_SxDown\r
+
+A:\e\e\\.4
+P:^_SxLeft\r
+
+A:\e\e\\.6
+P:^_SxRight\r
+
+A:\e\e\\.8
+P:^_SxUp\r
+
+# Ctrl + カーソルキー
+
+A:\e\e\\+2
+P:^_CxDown\r
+
+A:\e\e\\+4
+P:^_CxLeft\r
+
+A:\e\e\\+6
+P:^_CxRight\r
+
+A:\e\e\\+8
+P:^_CxUp\r
+
+# テンキー
+
+A:1
+P:^_xKP_1\r
+
+A:2
+P:^_xKP_2\r
+
+A:3
+P:^_xKP_3\r
+
+A:4
+P:^_xKP_4\r
+
+A:5
+P:^_xKP_5\r
+
+A:6
+P:^_xKP_6\r
+
+A:7
+P:^_xKP_7\r
+
+A:8
+P:^_xKP_8\r
+
+A:9
+P:^_xKP_9\r
+
+# Shift + テンキー
+
+A:\e\e\\.1
+P:^_SxKP_1\r
+
+A:\e\e\\.2
+P:^_SxKP_2\r
+
+A:\e\e\\.3
+P:^_SxKP_3\r
+
+A:\e\e\\.4
+P:^_SxKP_4\r
+
+A:\e\e\\.5
+P:^_SxKP_5\r
+
+A:\e\e\\.6
+P:^_SxKP_6\r
+
+A:\e\e\\.7
+P:^_SxKP_7\r
+
+A:\e\e\\.8
+P:^_SxKP_8\r
+
+A:\e\e\\.9
+P:^_SxKP_9\r
+
+# Ctrl + テンキー
+
+A:\e\e\\+1
+P:^_CxKP_1\r
+
+A:\e\e\\+2
+P:^_CxKP_2\r
+
+A:\e\e\\+3
+P:^_CxKP_3\r
+
+A:\e\e\\+4
+P:^_CxKP_4\r
+
+A:\e\e\\+5
+P:^_CxKP_5\r
+
+A:\e\e\\+6
+P:^_CxKP_6\r
+
+A:\e\e\\+7
+P:^_CxKP_7\r
+
+A:\e\e\\+8
+P:^_CxKP_8\r
+
+A:\e\e\\+9
+P:^_CxKP_9\r
+
+# numpad enter
+
+A:\r
+P:^_xKP_Enter\r
+
+# 以下のキーには適当なデフォルト動作がないが、何かしら割り当てないと自動拾いエ
+# ディタで反応しないため no-op っぽい動作を割り当てておく。
+
+A: 
+P:^_xHome\r
+
+A: 
+P:^_xEnd\r
+
+A: 
+P:^_xPage_Up\r
+
+A: 
+P:^_xPage_Down\r

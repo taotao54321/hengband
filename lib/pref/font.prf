@@ -28,6 +28,9 @@
 ?:[IOR [EQU $SYS xaw] [EQU $SYS x11]]
 %:font-x11.prf
 
+?:[EQU $SYS sdl]
+%:font-sdl.prf
+
 ?:[EQU $SYS gcu]
 %:font-gcu.prf
 
