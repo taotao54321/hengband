@@ -29,6 +29,7 @@ extern "C" {
 #include "main-sdl2/config.hpp"
 #include "main-sdl2/encoding.hpp"
 #include "main-sdl2/game-window.hpp"
+#include "main-sdl2/keyboard.hpp"
 #include "main-sdl2/prelude.hpp"
 #include "main-sdl2/system.hpp"
 
@@ -80,131 +81,9 @@ void send_keys(const std::string &keys)
         send_key(*it);
 }
 
-// Shift や Ctrl は適宜変換する(とりあえず日本語キーボード決め打ち)。
-// SDL_TextInputEvent で済ませられればよいのだが、それだと Ctrl などの変換を制御できないので。
 errr on_keydown(const SDL_KeyboardEvent &ev)
 {
-    constexpr char TERM_KEY_BS = '\x08';
-    constexpr char TERM_KEY_TAB = '\x09';
-    constexpr char TERM_KEY_CR = '\x0D';
-    constexpr char TERM_KEY_ESC = '\x1B';
-    constexpr char TERM_KEY_DEL = '\x7F';
-
-    const auto TERM_KEY_CTRL = [](const int key) { return key & 0x1F; };
-
-    const auto sym = ev.keysym.sym;
-    const auto shift = bool(ev.keysym.mod & KMOD_SHIFT);
-    const auto ctrl = bool(ev.keysym.mod & KMOD_CTRL);
-
-    if (ctrl) {
-        switch (sym) {
-        case '[':
-            send_key(TERM_KEY_ESC);
-            break;
-        default:
-            if ('a' <= sym && sym <= 'z')
-                send_key(TERM_KEY_CTRL(sym));
-            break;
-        }
-    } else if (shift) {
-        switch (sym) {
-        case '1':
-            send_key('!');
-            break;
-        case '2':
-            send_key('"');
-            break;
-        case '3':
-            send_key('#');
-            break;
-        case '4':
-            send_key('$');
-            break;
-        case '5':
-            send_key('%');
-            break;
-        case '6':
-            send_key('&');
-            break;
-        case '7':
-            send_key('\'');
-            break;
-        case '8':
-            send_key('(');
-            break;
-        case '9':
-            send_key(')');
-            break;
-        case '-':
-            send_key('=');
-            break;
-        case '^':
-            send_key('~');
-            break;
-        case '@':
-            send_key('`');
-            break;
-        case '[':
-            send_key('{');
-            break;
-        case ';':
-            send_key('+');
-            break;
-        case ':':
-            send_key('*');
-            break;
-        case ']':
-            send_key('}');
-            break;
-        case ',':
-            send_key('<');
-            break;
-        case '.':
-            send_key('>');
-            break;
-        case '/':
-            send_key('?');
-            break;
-        case '\\':
-            if (ev.keysym.scancode == SDL_SCANCODE_INTERNATIONAL3)
-                send_key('|');
-            else if (ev.keysym.scancode == SDL_SCANCODE_INTERNATIONAL1)
-                send_key('_');
-            break;
-        case SDLK_LEFT:
-            send_keys("\x1FSxLeft\x0D");
-            break;
-        default:
-            if ('a' <= sym && sym <= 'z')
-                send_key(char(sym - 0x20));
-            break;
-        }
-    } else {
-        switch (sym) {
-        case SDLK_LEFT:
-            send_keys("\x1FxLeft\x0D");
-            break;
-        case SDLK_BACKSPACE:
-            send_key(TERM_KEY_BS);
-            break;
-        case SDLK_TAB:
-            send_key(TERM_KEY_TAB);
-            break;
-        case SDLK_RETURN:
-            send_key(TERM_KEY_CR);
-            break;
-        case SDLK_ESCAPE:
-            send_key(TERM_KEY_ESC);
-            break;
-        case SDLK_DELETE:
-            send_key(TERM_KEY_DEL);
-            break;
-        default:
-            if (0x20 <= sym && sym <= 0x7E)
-                send_key(sym);
-            break;
-        }
-    }
+    send_keys(key_sequence(ev));
 
     return 0;
 }
