@@ -57,15 +57,38 @@ int window_id_to_term_id(const u32 win_id)
     PANIC("invalid window id: {}", win_id);
 }
 
+void send_key(const char key)
+{
+    const auto status = term_key_push(key);
+
+    switch (status) {
+    case -1:
+        EPRINTLN("nul character sent. ignoring");
+        break;
+    case 1:
+        EPRINTLN("term key queue overflow");
+        break;
+    default:
+        break;
+    }
+}
+
+void send_keys(const std::string &keys)
+{
+    // 逆順で term_key_push() しなければならない
+    for (auto it = std::rbegin(keys); it != std::rend(keys); ++it)
+        send_key(*it);
+}
+
 // Shift や Ctrl は適宜変換する(とりあえず日本語キーボード決め打ち)。
 // SDL_TextInputEvent で済ませられればよいのだが、それだと Ctrl などの変換を制御できないので。
 errr on_keydown(const SDL_KeyboardEvent &ev)
 {
-    constexpr int TERM_KEY_BS = '\x08';
-    constexpr int TERM_KEY_TAB = '\x09';
-    constexpr int TERM_KEY_CR = '\x0D';
-    constexpr int TERM_KEY_ESC = '\x1B';
-    constexpr int TERM_KEY_DEL = '\x7F';
+    constexpr char TERM_KEY_BS = '\x08';
+    constexpr char TERM_KEY_TAB = '\x09';
+    constexpr char TERM_KEY_CR = '\x0D';
+    constexpr char TERM_KEY_ESC = '\x1B';
+    constexpr char TERM_KEY_DEL = '\x7F';
 
     const auto TERM_KEY_CTRL = [](const int key) { return key & 0x1F; };
 
@@ -76,103 +99,109 @@ errr on_keydown(const SDL_KeyboardEvent &ev)
     if (ctrl) {
         switch (sym) {
         case '[':
-            term_key_push(TERM_KEY_ESC);
+            send_key(TERM_KEY_ESC);
             break;
         default:
             if ('a' <= sym && sym <= 'z')
-                term_key_push(TERM_KEY_CTRL(sym));
+                send_key(TERM_KEY_CTRL(sym));
             break;
         }
     } else if (shift) {
         switch (sym) {
         case '1':
-            term_key_push('!');
+            send_key('!');
             break;
         case '2':
-            term_key_push('"');
+            send_key('"');
             break;
         case '3':
-            term_key_push('#');
+            send_key('#');
             break;
         case '4':
-            term_key_push('$');
+            send_key('$');
             break;
         case '5':
-            term_key_push('%');
+            send_key('%');
             break;
         case '6':
-            term_key_push('&');
+            send_key('&');
             break;
         case '7':
-            term_key_push('\'');
+            send_key('\'');
             break;
         case '8':
-            term_key_push('(');
+            send_key('(');
             break;
         case '9':
-            term_key_push(')');
+            send_key(')');
             break;
         case '-':
-            term_key_push('=');
+            send_key('=');
             break;
         case '^':
-            term_key_push('~');
+            send_key('~');
             break;
         case '@':
-            term_key_push('`');
+            send_key('`');
             break;
         case '[':
-            term_key_push('{');
+            send_key('{');
             break;
         case ';':
-            term_key_push('+');
+            send_key('+');
             break;
         case ':':
-            term_key_push('*');
+            send_key('*');
             break;
         case ']':
-            term_key_push('}');
+            send_key('}');
             break;
         case ',':
-            term_key_push('<');
+            send_key('<');
             break;
         case '.':
-            term_key_push('>');
+            send_key('>');
             break;
         case '/':
-            term_key_push('?');
+            send_key('?');
             break;
         case '\\':
             if (ev.keysym.scancode == SDL_SCANCODE_INTERNATIONAL3)
-                term_key_push('|');
+                send_key('|');
             else if (ev.keysym.scancode == SDL_SCANCODE_INTERNATIONAL1)
-                term_key_push('_');
+                send_key('_');
+            break;
+        case SDLK_LEFT:
+            send_keys("\x1FSxLeft\x0D");
             break;
         default:
             if ('a' <= sym && sym <= 'z')
-                term_key_push(sym & ~0x20);
+                send_key(char(sym - 0x20));
             break;
         }
     } else {
         switch (sym) {
+        case SDLK_LEFT:
+            send_keys("\x1FxLeft\x0D");
+            break;
         case SDLK_BACKSPACE:
-            term_key_push(TERM_KEY_BS);
+            send_key(TERM_KEY_BS);
             break;
         case SDLK_TAB:
-            term_key_push(TERM_KEY_TAB);
+            send_key(TERM_KEY_TAB);
             break;
         case SDLK_RETURN:
-            term_key_push(TERM_KEY_CR);
+            send_key(TERM_KEY_CR);
             break;
         case SDLK_ESCAPE:
-            term_key_push(TERM_KEY_ESC);
+            send_key(TERM_KEY_ESC);
             break;
         case SDLK_DELETE:
-            term_key_push(TERM_KEY_DEL);
+            send_key(TERM_KEY_DEL);
             break;
         default:
             if (0x20 <= sym && sym <= 0x7E)
-                term_key_push(sym);
+                send_key(sym);
             break;
         }
     }
