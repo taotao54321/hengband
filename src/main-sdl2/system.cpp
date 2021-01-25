@@ -31,6 +31,8 @@ System::System()
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
         PANIC("SDL_Init() failed");
 
+    SDL_StartTextInput();
+
     {
         const int flags = IMG_INIT_JPG | IMG_INIT_PNG;
         if (IMG_Init(flags) != flags)
