@@ -60,25 +60,27 @@ int window_id_to_term_id(const u32 win_id)
 
 void send_key(const char key)
 {
-    const auto status = term_key_push(key);
+    // Windows ドライバと同様、自前でキューを操作する。
+    // 逆順に term_key_push() する方法だと長い日本語を入力したときにテキストの
+    // 順序が入れ替わってしまう。TEXTINPUT は長いテキストを複数のイベントに分割
+    // するため。
 
-    switch (status) {
-    case -1:
-        EPRINTLN("nul character sent. ignoring");
-        break;
-    case 1:
-        EPRINTLN("term key queue overflow");
-        break;
-    default:
-        break;
+    const auto next_idx = [](const u16 i) -> u16 { return i + 1 == Term->key_size ? 0 : i + 1; };
+
+    // キーバッファが一杯なら入力を捨てる
+    if (next_idx(Term->key_head) == Term->key_tail) {
+        EPRINTLN("key buffer overflow, ignoring key {:#02X}", key);
+        return;
     }
+
+    Term->key_queue[Term->key_head] = key;
+    Term->key_head = next_idx(Term->key_head);
 }
 
 void send_keys(const std::string &keys)
 {
-    // 逆順で term_key_push() しなければならない
-    for (auto it = std::rbegin(keys); it != std::rend(keys); ++it)
-        send_key(*it);
+    for (const auto key : keys)
+        send_key(key);
 }
 
 errr on_keydown(const SDL_KeyboardEvent &ev)
@@ -372,7 +374,7 @@ extern "C" void init_sdl2(int /*argc*/, char ** /*argv*/)
         wins.emplace_back(std::move(win));
 
         auto *term = &terms[i];
-        term_init(term, ncol, nrow, 1024);
+        term_init(term, ncol, nrow, 4096);
         term->soft_cursor = true;
         term->attr_blank = TERM_WHITE;
         term->char_blank = ' ';
