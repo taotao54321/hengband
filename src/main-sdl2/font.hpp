@@ -6,7 +6,6 @@
 
 #include <boost/core/noncopyable.hpp>
 
-#include <SDL.h>
 #include <SDL_ttf.h>
 
 #include "main-sdl2/system.hpp"
@@ -65,7 +64,7 @@ public:
     [[nodiscard]] std::pair<int, int> cr2xy(const std::pair<int, int> &cr) const;
 
     // (c,r,ncol,nrow) をカバーする矩形を求める。
-    [[nodiscard]] SDL_Rect calc_rect(int c, int r, int ncol, int nrow) const;
+    [[nodiscard]] Rect calc_rect(int c, int r, int ncol, int nrow) const;
 
     // UTF-8 文字列 text を色 (fg,bg) で描画する。
     [[nodiscard]] Surface render(const std::string &text, Color fg, Color bg) const;

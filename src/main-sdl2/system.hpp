@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <string>
+#include <utility>
 
 #include <boost/core/noncopyable.hpp>
 
@@ -24,6 +25,34 @@ public:
     [[nodiscard]] u8 a() const;
 
     [[nodiscard]] SDL_Color to_sdl_color() const;
+};
+
+class Rect {
+private:
+    int x_;
+    int y_;
+    int w_;
+    int h_;
+
+public:
+    Rect(int x, int y, int w, int h);
+
+    static Rect from_sdl_rect(const SDL_Rect &rect);
+
+    [[nodiscard]] int x() const;
+    [[nodiscard]] int y() const;
+    [[nodiscard]] int w() const;
+    [[nodiscard]] int h() const;
+
+    [[nodiscard]] int right() const;
+    [[nodiscard]] int bottom() const;
+
+    [[nodiscard]] std::pair<int, int> pos() const;
+    [[nodiscard]] std::pair<int, int> size() const;
+
+    [[nodiscard]] bool contains(int x, int y) const;
+
+    [[nodiscard]] SDL_Rect to_sdl_rect() const;
 };
 
 class System : private boost::noncopyable {

@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <variant>
 
 #include <boost/core/noncopyable.hpp>
 
@@ -59,9 +60,19 @@ struct PresentParam {
     std::array<bool, 8> visibles;
 };
 
-struct ClickResponse {
-    int win_idx;
+struct TermCell {
+    int col;
+    int row;
 };
+
+struct WindowButton {
+    int idx;
+};
+
+struct NullElement {
+};
+
+using UiElement = std::variant<TermCell, WindowButton, NullElement>;
 
 class GameWindow {
 private:
@@ -97,6 +108,9 @@ private:
     // ウィンドウサイズを (w,h) にしたときの端末画面サイズ (ncol,nrow) を得る。
     [[nodiscard]] std::pair<int, int> term_size_for(int w, int h) const;
     [[nodiscard]] std::pair<int, int> term_size_for(const std::pair<int, int> &wh) const;
+
+    // ウィンドウ上の端末画面領域の矩形を得る。
+    [[nodiscard]] Rect term_area_rect() const;
 
     friend class GameWindowDesc;
 
@@ -141,12 +155,11 @@ public:
     // バッファに描画した内容を画面に反映する。
     void present(const PresentParam &param) const;
 
+    // ピクセル座標 (x,y) 上の UI 要素を得る。
+    [[nodiscard]] UiElement ui_element_at(int x, int y) const;
+
     // ウィンドウリサイズ時に呼ばれる。新たな端末画面サイズ (ncol,nrow) を返す。
     std::pair<int, int> on_size_change(int w, int h);
-
-    // マウスクリック時に呼ばれる。
-    // (今のところ)表示/非表示にするウィンドウを返す。
-    [[nodiscard]] ClickResponse on_click(int x, int y) const;
 
     [[nodiscard]] GameWindowDesc desc() const;
 };

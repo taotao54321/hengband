@@ -237,6 +237,16 @@ std::pair<int, int> GameWindow::term_size_for(int w, int h) const
 
 std::pair<int, int> GameWindow::term_size_for(const std::pair<int, int> &wh) const { return term_size_for(wh.first, wh.second); }
 
+Rect GameWindow::term_area_rect() const
+{
+    const int x = 0;
+    const int y = is_main_ ? MAIN_WIN_MENU_H : 0;
+    const int w = font_.w() * ncnr_.first;
+    const int h = font_.h() * ncnr_.second;
+
+    return Rect(x, y, w, h);
+}
+
 u32 GameWindow::id() const
 {
     const auto res = SDL_GetWindowID(win_.get());
@@ -283,7 +293,7 @@ void GameWindow::term_fill_rect(const int c, const int r, const int ncol, const 
     if (SDL_SetRenderTarget(ren_.get(), tex_term_.get()) != 0)
         PANIC("SDL_SetRenderTarget() failed");
 
-    const auto rect = font_.calc_rect(c, r, ncol, nrow);
+    const auto rect = font_.calc_rect(c, r, ncol, nrow).to_sdl_rect();
     if (SDL_SetRenderDrawColor(ren_.get(), color.r(), color.g(), color.b(), color.a()) != 0)
         PANIC("SDL_SetRenderDrawColor() failed");
     if (SDL_RenderFillRect(ren_.get(), &rect) != 0)
@@ -315,7 +325,7 @@ void GameWindow::term_draw_wall(const int c, const int r, Color color) const
     if (SDL_SetRenderTarget(ren_.get(), tex_term_.get()) != 0)
         PANIC("SDL_SetRenderTarget() failed");
 
-    const auto rect = font_.calc_rect(c, r, 1, 1);
+    const auto rect = font_.calc_rect(c, r, 1, 1).to_sdl_rect();
     if (SDL_SetTextureColorMod(tex_wall_.get(), color.r(), color.g(), color.b()) != 0)
         PANIC("SDL_SetTextureColorMod() failed");
     if (SDL_RenderCopy(ren_.get(), tex_wall_.get(), nullptr, &rect) != 0)
@@ -366,6 +376,28 @@ void GameWindow::present(const PresentParam &param) const
     SDL_RenderPresent(ren_.get());
 }
 
+UiElement GameWindow::ui_element_at(const int x, const int y) const
+{
+    if (is_main_ && y < MAIN_WIN_MENU_H) {
+        const auto i = (x - (client_area_size().first - 32 * 8)) / 32;
+        if (1 <= i && i < 8)
+            return WindowButton{ i };
+    }
+
+    {
+        const auto rect = term_area_rect();
+        if (rect.contains(x, y)) {
+            const auto rel_x = x - rect.x();
+            const auto rel_y = y - rect.y();
+            const auto col = rel_x / font_.w();
+            const auto row = rel_y / font_.h();
+            return TermCell{ col, row };
+        }
+    }
+
+    return NullElement{};
+}
+
 std::pair<int, int> GameWindow::on_size_change(const int w, const int h)
 {
     // 端末画面サイズが変わる場合、端末画面テクスチャを作り直す
@@ -376,19 +408,6 @@ std::pair<int, int> GameWindow::on_size_change(const int w, const int h)
     }
 
     return ncnr_new;
-}
-
-ClickResponse GameWindow::on_click(const int x, const int y) const
-{
-    ClickResponse resp{ -1 };
-
-    if (is_main_ && y < MAIN_WIN_MENU_H) {
-        const auto i = (x - (client_area_size().first - 32 * 8)) / 32;
-        if (1 <= i && i < 8)
-            resp.win_idx = i;
-    }
-
-    return resp;
 }
 
 GameWindowDesc GameWindow::desc() const

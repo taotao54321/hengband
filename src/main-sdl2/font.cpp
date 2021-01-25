@@ -9,7 +9,6 @@
 
 #include <fontconfig/fontconfig.h>
 
-#include <SDL.h>
 #include <SDL_ttf.h>
 
 #include "main-sdl2/font.hpp"
@@ -146,11 +145,11 @@ std::pair<int, int> Font::cr2xy(const int c, const int r) const { return { c2x(c
 
 std::pair<int, int> Font::cr2xy(const std::pair<int, int> &cr) const { return cr2xy(cr.first, cr.second); }
 
-SDL_Rect Font::calc_rect(const int c, const int r, const int ncol, const int nrow) const
+Rect Font::calc_rect(const int c, const int r, const int ncol, const int nrow) const
 {
     const auto [x, y] = cr2xy(c, r);
     const auto [w, h] = cr2xy(ncol, nrow);
-    return { x, y, w, h };
+    return Rect(x, y, w, h);
 }
 
 Surface Font::render(const std::string &text, Color fg, Color bg) const

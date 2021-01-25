@@ -26,6 +26,31 @@ u8 Color::a() const { return color_.a; }
 
 SDL_Color Color::to_sdl_color() const { return color_; }
 
+Rect::Rect(const int x, const int y, const int w, const int h)
+    : x_(x)
+    , y_(y)
+    , w_(w)
+    , h_(h)
+{
+}
+
+Rect Rect::from_sdl_rect(const SDL_Rect &rect) { return Rect(rect.x, rect.y, rect.w, rect.h); }
+
+int Rect::x() const { return x_; }
+int Rect::y() const { return y_; }
+int Rect::w() const { return w_; }
+int Rect::h() const { return h_; }
+
+int Rect::right() const { return x_ + w_; }
+int Rect::bottom() const { return y_ + h_; }
+
+std::pair<int, int> Rect::pos() const { return { x_, y_ }; }
+std::pair<int, int> Rect::size() const { return { w_, h_ }; }
+
+bool Rect::contains(const int x, const int y) const { return x_ <= x && x < right() && y_ <= y && y < bottom(); }
+
+SDL_Rect Rect::to_sdl_rect() const { return SDL_Rect{ x_, y_, w_, h_ }; }
+
 System::System()
 {
     if (SDL_Init(SDL_INIT_VIDEO) != 0)

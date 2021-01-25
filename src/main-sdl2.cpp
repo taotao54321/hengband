@@ -14,6 +14,7 @@
 #include <array>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <SDL.h>
@@ -174,12 +175,18 @@ errr on_mousedown(const SDL_MouseButtonEvent &ev)
     const auto term_id = window_id_to_term_id(ev.windowID);
     const auto &win = wins[term_id];
 
-    const auto resp = win.on_click(ev.x, ev.y);
-    if (resp.win_idx > 0) {
-        wins[resp.win_idx].toggle_visible();
-        window_present(win);
-        win.raise();
-    }
+    // clang-format off
+    std::visit(overload{
+        [&](const WindowButton &btn) {
+            wins[btn.idx].toggle_visible();
+            window_present(win);
+            win.raise();
+        },
+        [&](const TermCell &cell) {
+        },
+        [&](NullElement) {}
+    }, win.ui_element_at(ev.x, ev.y));
+    // clang-format on
 
     return 0;
 }

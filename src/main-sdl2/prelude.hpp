@@ -74,6 +74,17 @@ template <class T, class Comp = std::less<>> inline bool chmax(T &xmax, const T 
     return false;
 }
 
+// std::variant の visitor 生成用。
+// ref: https://en.cppreference.com/w/cpp/utility/variant/visit
+template <class... Fs> class overload : private Fs... {
+public:
+    explicit overload(Fs... fs)
+        : Fs(fs)...
+    {
+    }
+    using Fs::operator()...;
+};
+
 namespace detail {
 template <class S, class... Args> inline std::string FORMAT_IMPL(const S &format_str, Args &&...args)
 {
