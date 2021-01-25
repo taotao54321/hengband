@@ -58,7 +58,12 @@
 # 思われるので省略。
 #=====================================================================
 
+# マクロトリガーフォーマット
+
 T:&x#:CSA:control-:shift-:alt-
+
+
+# 特殊キー
 
 T:F1:F1
 T:F2:F2
@@ -119,7 +124,17 @@ T:KP_Multiply:KP_Multiply
 T:KP_Period:KP_Period
 T:KP_Plus:KP_Plus
 
-# ASCII
+
+# ASCII 制御文字 (Shift+BS なども使えるように)
+
+T:Backspace:Backspace
+T:Tab:Tab
+T:Enter:Enter
+T:Escape:Escape
+T:Delete:Delete
+
+
+# ASCII 表示可能文字
 
 T:Space:20
 T:!:21
@@ -216,6 +231,7 @@ T:{:7B
 T:|:7C
 T:}:7D
 T:~:7E
+
 
 #---------------------------------------------------------------------
 # 特殊キーのデフォルト動作

@@ -71,4 +71,10 @@ std::string euc_to_utf8(const std::string &euc)
     return conv.convert(euc);
 }
 
+std::string utf8_to_euc(const std::string &utf8)
+{
+    const static EncodingConverter conv("UTF-8", "EUC-JP");
+    return conv.convert(utf8);
+}
+
 #endif // USE_SDL2

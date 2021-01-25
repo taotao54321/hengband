@@ -377,8 +377,8 @@ hengband_SOURCES = \
 	main-sdl2/config.cpp main-sdl2/config.hpp \
 	main-sdl2/encoding.cpp main-sdl2/encoding.hpp \
 	main-sdl2/font.cpp main-sdl2/font.hpp \
-	main-sdl2/keyboard.cpp main-sdl2/keyboard.hpp \
 	main-sdl2/game-window.cpp main-sdl2/game-window.hpp \
+	main-sdl2/input.cpp main-sdl2/input.hpp \
 	main-sdl2/picojson.h \
 	main-sdl2/prelude.hpp \
 	main-sdl2/system.cpp main-sdl2/system.hpp \

@@ -29,7 +29,7 @@ extern "C" {
 #include "main-sdl2/config.hpp"
 #include "main-sdl2/encoding.hpp"
 #include "main-sdl2/game-window.hpp"
-#include "main-sdl2/keyboard.hpp"
+#include "main-sdl2/input.hpp"
 #include "main-sdl2/prelude.hpp"
 #include "main-sdl2/system.hpp"
 
@@ -82,6 +82,13 @@ void send_keys(const std::string &keys)
 }
 
 errr on_keydown(const SDL_KeyboardEvent &ev)
+{
+    send_keys(key_sequence(ev));
+
+    return 0;
+}
+
+errr on_textinput(const SDL_TextInputEvent &ev)
 {
     send_keys(key_sequence(ev));
 
@@ -182,6 +189,9 @@ errr handle_event(const SDL_Event &ev)
     errr res = 0;
 
     switch (ev.type) {
+    case SDL_TEXTINPUT:
+        res = on_textinput(ev.text);
+        break;
     case SDL_KEYDOWN:
         res = on_keydown(ev.key);
         break;
