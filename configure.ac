@@ -45,6 +45,7 @@ AC_SUBST(DEFAULT_VAR_PATH)
 
 dnl Checks for programs.
 AC_PROG_CC
+AC_PROG_CXX
 
 AC_ARG_ENABLE(japanese,
 [  --disable-japanese      build english version], use_japanese=no, [AC_DEFINE(JP, 1, [Enable Japanese]) AC_DEFINE(EUC, 1, [Use Extended Unix Code])])
@@ -122,7 +123,6 @@ fi
 
 if test "x$enable_sdl2" = "xyes"; then
   AC_LANG_PUSH([C++])
-  AC_PROG_CXX
   AX_CXX_COMPILE_STDCXX_17
   AX_BOOST_BASE([1.70], , [AC_MSG_ERROR([Boost not found])])
   PKG_CHECK_MODULES(FMT, [fmt])
