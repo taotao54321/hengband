@@ -11,7 +11,9 @@
 //   は厳密には正しくない(3バイト文字や半角カナがあると崩れる)。この件について
 //   は開発コミュニティの判断に委ねたい。
 
+#include <algorithm>
 #include <array>
+#include <optional>
 #include <string>
 #include <utility>
 #include <variant>
@@ -42,11 +44,19 @@ constexpr int TERM_COUNT = 8;
 constexpr std::array<int, TERM_COUNT> TERM_IDS { 0, 1, 2, 3, 4, 5, 6, 7 };
 // clang-format on
 
+struct SelectionAnchor {
+    int term_id;
+    int col;
+    int row;
+};
+
 Config config{};
 
 System *sys{};
 std::vector<GameWindow> wins{};
 std::array<term_type, TERM_COUNT> terms{};
+
+std::optional<SelectionAnchor> sel_anchor{};
 
 int current_term_id() { return *static_cast<int *>(Term->data); }
 
@@ -172,9 +182,15 @@ errr on_window(const SDL_WindowEvent &ev)
 
 errr on_mousedown(const SDL_MouseButtonEvent &ev)
 {
+    // 左ボタン以外は無視
+    if (ev.button != SDL_BUTTON_LEFT)
+        return 0;
+
     const auto term_id = window_id_to_term_id(ev.windowID);
     const auto &win = wins[term_id];
 
+    // ウィンドウトグルボタンのみ処理する。
+    // 選択は左ボタンを押してからマウスを初めて動かしたときに開始する。
     // clang-format off
     std::visit(overload{
         [&](const WindowButton &btn) {
@@ -182,12 +198,85 @@ errr on_mousedown(const SDL_MouseButtonEvent &ev)
             window_present(win);
             win.raise();
         },
-        [&](const TermCell &cell) {
-        },
-        [&](NullElement) {}
+        [](TermCell) {},
+        [](NullElement) {},
     }, win.ui_element_at(ev.x, ev.y));
     // clang-format on
 
+    return 0;
+}
+
+errr on_mouseup(const SDL_MouseButtonEvent &ev)
+{
+    // 左ボタン以外は無視
+    if (ev.button != SDL_BUTTON_LEFT)
+        return 0;
+
+    // 未選択なら無視
+    if (!sel_anchor)
+        return 0;
+
+    const auto term_id = window_id_to_term_id(ev.windowID);
+    const auto &win = wins[term_id];
+
+    // 選択開始時と端末IDが一致しなければ無視し、選択解除
+    if (term_id != sel_anchor->term_id) {
+        sel_anchor = std::nullopt;
+        return 0;
+    }
+
+    // カーソルが端末画面内にあればコピー処理
+    // clang-format off
+    std::visit(overload {
+        [&](const TermCell& cell) {
+            const auto [cmin, cmax] = std::minmax(cell.col, sel_anchor->col);
+            const auto [rmin, rmax] = std::minmax(cell.row, sel_anchor->row);
+            // TODO: コピー
+            EPRINTLN("copy {} {} {} {}", cmin, cmax, rmin, rmax);
+        },
+        [](WindowButton) {},
+        [](NullElement) {},
+    }, win.ui_element_at(ev.x, ev.y));
+    // clang-format on
+
+    // 選択解除
+    sel_anchor = std::nullopt;
+
+    return 0;
+}
+
+errr on_mousemotion(const SDL_MouseMotionEvent &ev)
+{
+    // 左ボタンを押していないなら無視
+    if (!bool(ev.state & SDL_BUTTON_LMASK))
+        return 0;
+
+    const auto term_id = window_id_to_term_id(ev.windowID);
+    const auto &win = wins[term_id];
+
+    // 選択開始時と端末IDが一致しなければいったん選択解除
+    if (sel_anchor && term_id != sel_anchor->term_id)
+        sel_anchor = std::nullopt;
+
+    // カーソルが端末画面内にあれば選択処理
+    // clang-format off
+    std::visit(overload {
+        [&](const TermCell& cell) {
+            // 未選択なら選択開始
+            if(!sel_anchor)
+                sel_anchor = SelectionAnchor { term_id, cell.col, cell.row };
+
+            const auto [cmin, cmax] = std::minmax(cell.col, sel_anchor->col);
+            const auto [rmin, rmax] = std::minmax(cell.row, sel_anchor->row);
+            // TODO: 選択表示
+            EPRINTLN("select {} {} {} {}", cmin, cmax, rmin, rmax);
+        },
+        [](WindowButton) {},
+        [](NullElement) {},
+    }, win.ui_element_at(ev.x, ev.y));
+    // clang-format on
+
+    // TODO: stub
     return 0;
 }
 
@@ -206,6 +295,12 @@ errr handle_event(const SDL_Event &ev)
         break;
     case SDL_MOUSEBUTTONDOWN:
         res = on_mousedown(ev.button);
+        break;
+    case SDL_MOUSEBUTTONUP:
+        res = on_mouseup(ev.button);
+        break;
+    case SDL_MOUSEMOTION:
+        res = on_mousemotion(ev.motion);
         break;
     case SDL_WINDOWEVENT:
         res = on_window(ev.window);
