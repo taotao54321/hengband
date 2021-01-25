@@ -1,3 +1,6 @@
+#include "autoconf.h"
+#ifdef USE_SDL2
+
 #include <optional>
 #include <string>
 #include <tuple>
@@ -16,7 +19,7 @@ bool is_print_ascii(const SDL_Keycode sym) { return '\x20' <= sym && sym <= '\x7
 
 SDL_Keycode to_upper_ascii(const SDL_Keycode sym) { return is_lower_ascii(sym) ? sym - 0x20 : sym; }
 
-enum class KeyboardLayout { JP, US };
+enum class KeyboardLayout { JPN, USA };
 
 // とりあえず JP, US のみ対応。
 // 一応 pref の shift キー設定と組み合わせることで任意のレイアウトに対応できそ
@@ -25,8 +28,8 @@ KeyboardLayout detect_keyboard_layout()
 {
     // US キーボードの [ が JP キーボードでは @ であることを利用して判定
     if (SDL_GetKeyFromScancode(SDL_SCANCODE_LEFTBRACKET) == SDLK_AT)
-        return KeyboardLayout::JP;
-    return KeyboardLayout::US;
+        return KeyboardLayout::JPN;
+    return KeyboardLayout::USA;
 }
 
 SDL_Keycode sym_shifted_jp(const SDL_Keycode sym, const SDL_Scancode code)
@@ -105,9 +108,9 @@ SDL_Keycode sym_shifted_us(const SDL_Keycode sym, const SDL_Scancode)
 SDL_Keycode sym_shifted(const KeyboardLayout layout, const SDL_Keycode sym, const SDL_Scancode code)
 {
     switch (layout) {
-    case KeyboardLayout::JP:
+    case KeyboardLayout::JPN:
         return sym_shifted_jp(sym, code);
-    case KeyboardLayout::US:
+    case KeyboardLayout::USA:
         return sym_shifted_us(sym, code);
     default:
         PANIC("unreachable");
@@ -306,3 +309,5 @@ std::string key_sequence(const SDL_KeyboardEvent &ev)
 
     return "";
 }
+
+#endif // USE_SDL2
