@@ -373,6 +373,25 @@ void GameWindow::present(const PresentParam &param) const
         }
     }
 
+    // 選択中ならその範囲を表示
+    if (param.selection) {
+        const auto [c, r, ncol, nrow] = *param.selection;
+        const auto rect_term = term_area_rect();
+
+        const auto x = rect_term.x() + font_.w() * c;
+        const auto y = rect_term.y() + font_.h() * r;
+        const auto w = font_.w() * ncol;
+        const auto h = font_.h() * nrow;
+        SDL_Rect rect{ x, y, w, h };
+
+        if (SDL_SetRenderDrawBlendMode(ren_.get(), SDL_BLENDMODE_BLEND) != 0)
+            PANIC("SDL_SetRenderDrawBlendMode() failed");
+        if (SDL_SetRenderDrawColor(ren_.get(), 0xFF, 0xFF, 0xFF, 0x40) != 0)
+            PANIC("SDL_SetRenderDrawColor() failed");
+        if (SDL_RenderFillRect(ren_.get(), &rect) != 0)
+            PANIC("SDL_RenderFillRect() failed");
+    }
+
     SDL_RenderPresent(ren_.get());
 }
 

@@ -15,6 +15,7 @@
 #include <array>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -111,9 +112,11 @@ errr on_textinput(const SDL_TextInputEvent &ev)
     return 0;
 }
 
-void window_present(const GameWindow &win)
+void window_present(const GameWindow &win, const std::optional<std::tuple<int, int, int, int>> &selection)
 {
     PresentParam param;
+    param.selection = selection;
+
     for (const auto i : IRANGE(8))
         param.visibles[i] = wins[i].is_visible();
 
@@ -129,7 +132,7 @@ void window_redraw(const int term_id)
     term_activate(term);
     term_redraw();
 
-    window_present(win);
+    window_present(win, std::nullopt);
 }
 
 errr on_window_size_change(const SDL_WindowEvent &ev, const int term_id)
@@ -153,7 +156,7 @@ errr on_window_close(const SDL_WindowEvent &, const int term_id)
     const auto &win = wins[term_id];
     win.set_visible(false);
 
-    window_present(wins[0]);
+    window_present(wins[0], std::nullopt);
 
     return 0;
 }
@@ -205,7 +208,7 @@ errr on_mousedown(const SDL_MouseButtonEvent &ev)
     std::visit(overload{
         [&](const WindowButton &btn) {
             wins[btn.idx].toggle_visible();
-            window_present(win);
+            window_present(win, std::nullopt);
             win.raise();
         },
         [](TermCell) {},
@@ -226,20 +229,27 @@ errr on_mouseup(const SDL_MouseButtonEvent &ev)
     if (!sel_anchor)
         return 0;
 
+    const auto &win = wins[sel_anchor->term_id];
+
+    // 選択中の場合、共通の終了処理が必要
+    // 選択開始したウィンドウを再描画し、選択解除する
+    const auto finish = [&]() {
+        window_present(win, std::nullopt);
+        sel_anchor = std::nullopt;
+    };
+
     const auto term_id = window_id_to_term_id(ev.windowID);
-    // 無効なウィンドウIDなら無視し、選択解除
+    // 無効なウィンドウIDなら無視
     // (ウィンドウ内でボタン押下してからウィンドウ外へドラッグしてボタンを離す
     // ことで、実際に無効なウィンドウIDが生成されうる)
     if (!term_id) {
-        sel_anchor = std::nullopt;
+        finish();
         return 0;
     }
 
-    const auto &win = wins[*term_id];
-
-    // 選択開始時と端末IDが一致しなければ無視し、選択解除
+    // 選択開始時と端末IDが一致しなければ無視
     if (term_id != sel_anchor->term_id) {
-        sel_anchor = std::nullopt;
+        finish();
         return 0;
     }
 
@@ -257,8 +267,7 @@ errr on_mouseup(const SDL_MouseButtonEvent &ev)
     }, win.ui_element_at(ev.x, ev.y));
     // clang-format on
 
-    // 選択解除
-    sel_anchor = std::nullopt;
+    finish();
 
     return 0;
 }
@@ -290,8 +299,9 @@ errr on_mousemotion(const SDL_MouseMotionEvent &ev)
 
             const auto [cmin, cmax] = std::minmax(cell.col, sel_anchor->col);
             const auto [rmin, rmax] = std::minmax(cell.row, sel_anchor->row);
-            // TODO: 選択表示
-            EPRINTLN("select {} {} {} {}", cmin, cmax, rmin, rmax);
+
+            const std::tuple<int,int,int,int> selection { cmin, rmin, cmax-cmin+1, rmax-rmin+1 };
+            window_present(win, selection);
         },
         [](WindowButton) {},
         [](NullElement) {},
@@ -387,7 +397,7 @@ extern "C" errr term_xtra_sdl2(const int name, const int value)
     case TERM_XTRA_FRESH: {
         // 現在のウィンドウの描画内容を反映
         const auto &win = wins[current_term_id()];
-        window_present(win);
+        window_present(win, std::nullopt);
         break;
     }
     case TERM_XTRA_DELAY:
@@ -511,7 +521,7 @@ extern "C" void init_sdl2(int /*argc*/, char ** /*argv*/)
     }
 
     for (const auto &win : wins)
-        window_present(win);
+        window_present(win, std::nullopt);
 
     quit_aux = quit_hook;
 

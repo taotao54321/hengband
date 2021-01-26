@@ -2,6 +2,7 @@
 
 #include <array>
 #include <map>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -57,7 +58,11 @@ public:
 };
 
 struct PresentParam {
+    // 各ウィンドウの可視状態
     std::array<bool, 8> visibles;
+
+    // 対象端末のテキスト選択状態 (c,r,ncol,nrow)
+    std::optional<std::tuple<int, int, int, int>> selection;
 };
 
 struct TermCell {
