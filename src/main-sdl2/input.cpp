@@ -287,8 +287,12 @@ std::string key_sequence(const SDL_TextInputEvent &ev)
         return input->to_sequence();
 
     // コマンド入力でないなら日本語入力と解釈し、システムエンコーディングに変換
-    // してそのまま垂れ流す。
-    return utf8_to_euc(ev.text);
+    // できるならそのまま垂れ流す
+    if (auto euc = utf8_to_euc(ev.text))
+        return *euc;
+
+    // 変換失敗時は空シーケンスを返す
+    return "";
 }
 
 #endif // USE_SDL2

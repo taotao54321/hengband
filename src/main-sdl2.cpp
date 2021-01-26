@@ -483,7 +483,12 @@ extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, 
         }
     }
 
-    const auto utf8 = euc_to_utf8(euc);
+    // UTF-8 に変換
+    // 変換失敗時はその旨が伝わるような文字列に置換
+    // TODO: lossy な変換関数を設けてそれを使う
+    auto utf8 = euc_to_utf8(euc);
+    if (!utf8)
+        utf8 = std::string(std::size(euc), '?');
 
     const Color fg(angband_color_table[attr][1], angband_color_table[attr][2], angband_color_table[attr][3], 0xFF);
     const Color bg(0, 0, 0, 0xFF);
@@ -495,7 +500,7 @@ extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, 
     win.term_fill_rect(c, r, n, 1, Color(0, 0, 0, 0xFF));
 
     // 先にテキストを描画
-    win.term_draw_text(c, r, utf8, fg, bg);
+    win.term_draw_text(c, r, *utf8, fg, bg);
 
     // 後から壁を描画
     for (const auto off : offs_wall)

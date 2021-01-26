@@ -2,6 +2,7 @@
 #ifdef USE_SDL2
 
 #include <cerrno>
+#include <optional>
 #include <string>
 
 #include <boost/core/noncopyable.hpp>
@@ -27,7 +28,7 @@ public:
 
     ~EncodingConverter() { iconv_close(conv_); }
 
-    [[nodiscard]] std::string convert(const std::string &src) const
+    [[nodiscard]] std::optional<std::string> convert(const std::string &src) const
     {
         constexpr std::size_t BUF_SIZE = 1024;
 
@@ -48,11 +49,9 @@ public:
                 case E2BIG:
                     break; // ignore
                 case EILSEQ:
-                    PANIC("illegal input");
                 case EINVAL:
-                    PANIC("incomplete input");
                 default:
-                    PANIC("iconv(): unknown errno: {}", errno);
+                    return std::nullopt;
                 }
             }
 
@@ -65,13 +64,13 @@ public:
 
 } // anonymous namespace
 
-std::string euc_to_utf8(const std::string &euc)
+std::optional<std::string> euc_to_utf8(const std::string &euc)
 {
     const static EncodingConverter conv("EUC-JP", "UTF-8");
     return conv.convert(euc);
 }
 
-std::string utf8_to_euc(const std::string &utf8)
+std::optional<std::string> utf8_to_euc(const std::string &utf8)
 {
     const static EncodingConverter conv("UTF-8", "EUC-JP");
     return conv.convert(utf8);
