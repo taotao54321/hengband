@@ -60,13 +60,16 @@ std::optional<SelectionAnchor> sel_anchor{};
 
 int current_term_id() { return *static_cast<int *>(Term->data); }
 
-int window_id_to_term_id(const u32 win_id)
+// SDL のウィンドウIDから対応する端末IDを得る。
+// 無効なウィンドウIDに対しては std::nullopt を返す。
+// (例えばウィンドウ外でマウスボタンを離したときのウィンドウIDは無効値となる)
+std::optional<int> window_id_to_term_id(const u32 win_id)
 {
     for (const auto i : IRANGE(TERM_COUNT)) {
         if (wins[i].id() == win_id)
             return i;
     }
-    PANIC("invalid window id: {}", win_id);
+    return std::nullopt;
 }
 
 void send_key(const char key)
@@ -158,19 +161,22 @@ errr on_window_close(const SDL_WindowEvent &, const int term_id)
 errr on_window(const SDL_WindowEvent &ev)
 {
     const auto term_id = window_id_to_term_id(ev.windowID);
+    // 無効なウィンドウIDは無視
+    if (!term_id)
+        return 0;
 
     errr res = 0;
 
     switch (ev.event) {
     case SDL_WINDOWEVENT_EXPOSED:
         // これを行わないとリサイズ中に真っ黒になることがある
-        window_redraw(term_id);
+        window_redraw(*term_id);
         break;
     case SDL_WINDOWEVENT_SIZE_CHANGED: {
-        res = on_window_size_change(ev, term_id);
+        res = on_window_size_change(ev, *term_id);
         break;
     case SDL_WINDOWEVENT_CLOSE:
-        res = on_window_close(ev, term_id);
+        res = on_window_close(ev, *term_id);
         break;
     }
     default:
@@ -187,7 +193,11 @@ errr on_mousedown(const SDL_MouseButtonEvent &ev)
         return 0;
 
     const auto term_id = window_id_to_term_id(ev.windowID);
-    const auto &win = wins[term_id];
+    // 無効なウィンドウIDは無視
+    if (!term_id)
+        return 0;
+
+    const auto &win = wins[*term_id];
 
     // ウィンドウトグルボタンのみ処理する。
     // 選択は左ボタンを押してからマウスを初めて動かしたときに開始する。
@@ -217,7 +227,15 @@ errr on_mouseup(const SDL_MouseButtonEvent &ev)
         return 0;
 
     const auto term_id = window_id_to_term_id(ev.windowID);
-    const auto &win = wins[term_id];
+    // 無効なウィンドウIDなら無視し、選択解除
+    // (ウィンドウ内でボタン押下してからウィンドウ外へドラッグしてボタンを離す
+    // ことで、実際に無効なウィンドウIDが生成されうる)
+    if (!term_id) {
+        sel_anchor = std::nullopt;
+        return 0;
+    }
+
+    const auto &win = wins[*term_id];
 
     // 選択開始時と端末IDが一致しなければ無視し、選択解除
     if (term_id != sel_anchor->term_id) {
@@ -252,7 +270,11 @@ errr on_mousemotion(const SDL_MouseMotionEvent &ev)
         return 0;
 
     const auto term_id = window_id_to_term_id(ev.windowID);
-    const auto &win = wins[term_id];
+    // 無効なウィンドウIDは無視
+    if (!term_id)
+        return 0;
+
+    const auto &win = wins[*term_id];
 
     // 選択開始時と端末IDが一致しなければいったん選択解除
     if (sel_anchor && term_id != sel_anchor->term_id)
@@ -264,7 +286,7 @@ errr on_mousemotion(const SDL_MouseMotionEvent &ev)
         [&](const TermCell& cell) {
             // 未選択なら選択開始
             if(!sel_anchor)
-                sel_anchor = SelectionAnchor { term_id, cell.col, cell.row };
+                sel_anchor = SelectionAnchor { *term_id, cell.col, cell.row };
 
             const auto [cmin, cmax] = std::minmax(cell.col, sel_anchor->col);
             const auto [rmin, rmax] = std::minmax(cell.row, sel_anchor->row);
@@ -276,7 +298,6 @@ errr on_mousemotion(const SDL_MouseMotionEvent &ev)
     }, win.ui_element_at(ev.x, ev.y));
     // clang-format on
 
-    // TODO: stub
     return 0;
 }
 
