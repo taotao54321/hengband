@@ -39,6 +39,10 @@ extern "C" {
 
 namespace {
 
+// 壁の内部コード。lib/pref/font-sdl.prf で指定されている。
+// この値は EUC-JP と干渉しない。
+constexpr char CH_WALL = '\x7F';
+
 constexpr int TERM_COUNT = 8;
 
 // clang-format off
@@ -61,18 +65,7 @@ std::optional<SelectionAnchor> sel_anchor{};
 
 int current_term_id() { return *static_cast<int *>(Term->data); }
 
-// SDL のウィンドウIDから対応する端末IDを得る。
-// 無効なウィンドウIDに対しては std::nullopt を返す。
-// (例えばウィンドウ外でマウスボタンを離したときのウィンドウIDは無効値となる)
-std::optional<int> window_id_to_term_id(const u32 win_id)
-{
-    for (const auto i : IRANGE(TERM_COUNT)) {
-        if (wins[i].id() == win_id)
-            return i;
-    }
-    return std::nullopt;
-}
-
+// ゲーム側へキーを送る
 void send_key(const char key)
 {
     // Windows ドライバと同様、自前でキューを操作する。
@@ -92,10 +85,37 @@ void send_key(const char key)
     Term->key_head = next_idx(Term->key_head);
 }
 
+// ゲーム側へキー列を送る
 void send_keys(const std::string &keys)
 {
     for (const auto key : keys)
         send_key(key);
+}
+
+// 端末 term_id 上の文字座標 (c,r) から n Byte 読み取り、UTF-8 に変換して返す
+// ワイド文字の欠片は空白に変換される
+std::string read_term(const int term_id, const int c, const int r, const int n)
+{
+    const auto *term = &terms[term_id];
+
+    std::string buf(&term->scr->c[r][c], n);
+
+    ALL(std::replace, buf, CH_WALL, '#');
+
+    // TODO: UTF-8 変換、文字境界処理
+    return buf;
+}
+
+// SDL のウィンドウIDから対応する端末IDを得る。
+// 無効なウィンドウIDに対しては std::nullopt を返す。
+// (例えばウィンドウ外でマウスボタンを離したときのウィンドウIDは無効値となる)
+std::optional<int> window_id_to_term_id(const u32 win_id)
+{
+    for (const auto i : IRANGE(TERM_COUNT)) {
+        if (wins[i].id() == win_id)
+            return i;
+    }
+    return std::nullopt;
 }
 
 errr on_keydown(const SDL_KeyboardEvent &ev)
@@ -248,7 +268,7 @@ errr on_mouseup(const SDL_MouseButtonEvent &ev)
     }
 
     // 選択開始時と端末IDが一致しなければ無視
-    if (term_id != sel_anchor->term_id) {
+    if (*term_id != sel_anchor->term_id) {
         finish();
         return 0;
     }
@@ -259,8 +279,18 @@ errr on_mouseup(const SDL_MouseButtonEvent &ev)
         [&](const TermCell& cell) {
             const auto [cmin, cmax] = std::minmax(cell.col, sel_anchor->col);
             const auto [rmin, rmax] = std::minmax(cell.row, sel_anchor->row);
-            // TODO: コピー
-            EPRINTLN("copy {} {} {} {}", cmin, cmax, rmin, rmax);
+            const auto ncol = cmax - cmin + 1;
+            const auto nrow = rmax - rmin + 1;
+
+            std::string buf;
+            buf.reserve(ncol * nrow);
+
+            for(const auto r : IRANGE(rmin, rmax+1)) {
+                buf.append(read_term(*term_id, cmin, r, ncol));
+                buf.push_back('\n');
+            }
+
+            SDL_SetClipboardText(buf.c_str());
         },
         [](WindowButton) {},
         [](NullElement) {},
@@ -286,7 +316,7 @@ errr on_mousemotion(const SDL_MouseMotionEvent &ev)
     const auto &win = wins[*term_id];
 
     // 選択開始時と端末IDが一致しなければいったん選択解除
-    if (sel_anchor && term_id != sel_anchor->term_id)
+    if (sel_anchor && *term_id != sel_anchor->term_id)
         sel_anchor = std::nullopt;
 
     // カーソルが端末画面内にあれば選択処理
@@ -437,10 +467,6 @@ extern "C" errr term_wipe_sdl2(const int c, const int r, const int n)
 
 extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, const TERM_COLOR attr, const char *euc_arg)
 {
-    // 壁の内部コード。lib/pref/font-sdl.prf で指定されている。
-    // この値は EUC-JP と干渉しない。
-    constexpr char CH_WALL = 0x7F;
-
     const auto &win = wins[current_term_id()];
 
     // 入力文字列内の CH_WALL を '#' に置換し、そのインデックスを記録していく。
