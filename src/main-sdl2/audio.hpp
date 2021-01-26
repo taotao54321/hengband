@@ -97,4 +97,6 @@ public:
     // 名前を指定して Sound を得る。
     // 自身が null object の場合は null object を返す。
     [[nodiscard]] const std::vector<Sound> &sound(const std::string &name) const;
+
+    void stop_music() const;
 };

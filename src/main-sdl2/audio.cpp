@@ -205,4 +205,10 @@ const std::vector<Sound> &AudioAsset::sound(const std::string &name) const
     return it->second;
 }
 
+void AudioAsset::stop_music() const
+{
+    (void)this;
+    (void)Music::null().play();
+}
+
 #endif // USE_SDL2

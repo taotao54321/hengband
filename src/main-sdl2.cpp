@@ -432,13 +432,25 @@ errr play_sound(const int id)
 
 errr play_music_basic(const int id)
 {
-    //
+    constexpr char CATEGORY[] = "Basic";
+
+    if (id < 0 || int(std::size(angband_music_basic_name)) <= id)
+        return 1;
+    const std::string name(angband_music_basic_name[id]);
+
+    if (!random_choose(audio->music(CATEGORY, name)).play())
+        EPRINTLN("failed to play music '{}/{}'", CATEGORY, name);
+
     return 0;
 }
 
 errr play_music_category(const std::string &category, const int id)
 {
-    //
+    const auto name = FORMAT("{:03}", id);
+
+    if (!random_choose(audio->music(category, name)).play())
+        EPRINTLN("failed to play music '{}/{}", category, name);
+
     return 0;
 }
 
@@ -480,14 +492,19 @@ extern "C" errr term_xtra_sdl2(const int name, const int value)
         res = play_sound(value);
         break;
     case TERM_XTRA_MUSIC_BASIC:
+        res = play_music_basic(value);
         break;
     case TERM_XTRA_MUSIC_DUNGEON:
+        res = play_music_category("Dungeon", value);
         break;
     case TERM_XTRA_MUSIC_QUEST:
+        res = play_music_category("Quest", value);
         break;
     case TERM_XTRA_MUSIC_TOWN:
+        res = play_music_category("Town", value);
         break;
     case TERM_XTRA_MUSIC_MUTE:
+        audio->stop_music();
         break;
     default:
         break;
