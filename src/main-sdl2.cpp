@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <array>
 #include <optional>
+#include <random>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -23,6 +24,10 @@
 #include <SDL.h>
 
 extern "C" {
+#include "game-option/special-options.h"
+#include "io/files-util.h"
+#include "main/music-definitions-table.h"
+#include "main/sound-definitions-table.h"
 #include "system/angband.h"
 #include "term/gameterm.h"
 #include "term/term-color-types.h"
@@ -30,6 +35,7 @@ extern "C" {
 #include "term/z-util.h"
 }
 
+#include "main-sdl2/audio.hpp"
 #include "main-sdl2/config.hpp"
 #include "main-sdl2/encoding.hpp"
 #include "main-sdl2/game-window.hpp"
@@ -58,10 +64,21 @@ struct SelectionAnchor {
 Config config{};
 
 System *sys{};
+AudioAsset *audio{};
+
 std::vector<GameWindow> wins{};
 std::array<term_type, TERM_COUNT> terms{};
 
 std::optional<SelectionAnchor> sel_anchor{};
+
+// ゲーム内乱数には影響しない。
+template <class T> const T &random_choose(const std::vector<T> &xs)
+{
+    static std::default_random_engine rng(std::random_device{}());
+
+    std::uniform_int_distribution<std::size_t> dist(0, std::size(xs) - 1);
+    return xs[dist(rng)];
+}
 
 int current_term_id() { return *static_cast<int *>(Term->data); }
 
@@ -401,6 +418,30 @@ errr flush_events()
     return 0;
 }
 
+errr play_sound(const int id)
+{
+    if (id < 0 || int(std::size(angband_sound_name)) <= id)
+        return 1;
+    const std::string name(angband_sound_name[id]);
+
+    if (!random_choose(audio->sound(name)).play())
+        EPRINTLN("failed to play sound '{}'", name);
+
+    return 0;
+}
+
+errr play_music_basic(const int id)
+{
+    //
+    return 0;
+}
+
+errr play_music_category(const std::string &category, const int id)
+{
+    //
+    return 0;
+}
+
 extern "C" errr term_xtra_sdl2(const int name, const int value)
 {
     errr res = 0;
@@ -434,6 +475,19 @@ extern "C" errr term_xtra_sdl2(const int name, const int value)
     case TERM_XTRA_DELAY:
         // ディレイ (引数: ミリ秒)
         SDL_Delay(value);
+        break;
+    case TERM_XTRA_SOUND:
+        res = play_sound(value);
+        break;
+    case TERM_XTRA_MUSIC_BASIC:
+        break;
+    case TERM_XTRA_MUSIC_DUNGEON:
+        break;
+    case TERM_XTRA_MUSIC_QUEST:
+        break;
+    case TERM_XTRA_MUSIC_TOWN:
+        break;
+    case TERM_XTRA_MUSIC_MUTE:
         break;
     default:
         break;
@@ -528,6 +582,7 @@ extern "C" void init_sdl2(int /*argc*/, char ** /*argv*/)
         config = *config_loaded;
 
     sys = new System;
+    audio = new AudioAsset(ANGBAND_DIR_XTRA);
 
     for (const auto i : IRANGE(TERM_COUNT)) {
         const auto is_main = i == 0;
@@ -553,6 +608,9 @@ extern "C" void init_sdl2(int /*argc*/, char ** /*argv*/)
         window_present(win, std::nullopt);
 
     quit_aux = quit_hook;
+
+    use_music = true;
+    use_sound = true;
 
     // メインウィンドウをアクティブ化
     wins[0].raise();

@@ -7,6 +7,7 @@
 
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
 #include "main-sdl2/prelude.hpp"
@@ -17,7 +18,7 @@ Color::Color(const u8 r, const u8 g, const u8 b, const u8 a)
 {
 }
 
-Color Color::from_sdl_color(SDL_Color color) { return Color(color.r, color.g, color.b, color.a); }
+Color Color::from_sdl_color(const SDL_Color color) { return Color(color.r, color.g, color.b, color.a); }
 
 u8 Color::r() const { return color_.r; }
 u8 Color::g() const { return color_.g; }
@@ -53,7 +54,7 @@ SDL_Rect Rect::to_sdl_rect() const { return SDL_Rect{ x_, y_, w_, h_ }; }
 
 System::System()
 {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
         PANIC("SDL_Init() failed");
 
     SDL_StartTextInput();
@@ -66,10 +67,23 @@ System::System()
 
     if (TTF_Init() != 0)
         PANIC("TTF_Init() failed");
+
+    {
+        // TODO: 新しい SDL_Mixer では Midi などにも対応してるようだがどうする?
+        const int flags = MIX_INIT_FLAC | MIX_INIT_MP3 | MIX_INIT_OGG;
+        if (Mix_Init(flags) != flags)
+            PANIC("Mix_Init() failed");
+
+        if (Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 1024) != 0)
+            PANIC("Mix_OpenAudio() failed");
+    }
 }
 
 System::~System()
 {
+    Mix_CloseAudio();
+    Mix_Quit();
+
     TTF_Quit();
 
     IMG_Quit();
@@ -85,7 +99,7 @@ void Window::drop()
     }
 }
 
-Window::Window(SDL_Window *win)
+Window::Window(SDL_Window *const win)
     : win_(win)
 {
 }
@@ -122,12 +136,12 @@ void Renderer::drop()
     }
 }
 
-Renderer::Renderer(SDL_Renderer *ren)
+Renderer::Renderer(SDL_Renderer *const ren)
     : ren_(ren)
 {
 }
 
-Renderer Renderer::with_window(SDL_Window *win)
+Renderer Renderer::with_window(SDL_Window *const win)
 {
     auto *ren = SDL_CreateRenderer(win, -1, 0);
     if (!ren)
@@ -159,12 +173,12 @@ void Texture::drop()
     }
 }
 
-Texture::Texture(SDL_Texture *tex)
+Texture::Texture(SDL_Texture *const tex)
     : tex_(tex)
 {
 }
 
-Texture Texture::create_target(SDL_Renderer *ren, const int w, const int h)
+Texture Texture::create_target(SDL_Renderer *const ren, const int w, const int h)
 {
     // TODO: ピクセルフォーマットはこれが最善なのか?
     auto *tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, w, h);
@@ -173,7 +187,7 @@ Texture Texture::create_target(SDL_Renderer *ren, const int w, const int h)
     return Texture(tex);
 }
 
-Texture Texture::from_surface(SDL_Renderer *ren, SDL_Surface *surf)
+Texture Texture::from_surface(SDL_Renderer *const ren, SDL_Surface *const surf)
 {
     auto *tex = SDL_CreateTextureFromSurface(ren, surf);
     if (!tex)
@@ -205,7 +219,7 @@ void Surface::drop()
     }
 }
 
-Surface::Surface(SDL_Surface *surf)
+Surface::Surface(SDL_Surface *const surf)
     : surf_(surf)
 {
 }
@@ -218,7 +232,7 @@ Surface Surface::create(const int w, const int h)
     return Surface(surf);
 }
 
-Surface Surface::create_tiled(SDL_Surface *tile, const int w, const int h)
+Surface Surface::create_tiled(SDL_Surface *const tile, const int w, const int h)
 {
     const int w_tile = tile->w;
     const int h_tile = tile->h;
@@ -235,7 +249,7 @@ Surface Surface::create_tiled(SDL_Surface *tile, const int w, const int h)
     return surf;
 }
 
-Surface Surface::from_bytes(const u8 *buf, const std::size_t len)
+Surface Surface::from_bytes(const u8 *const buf, const std::size_t len)
 {
     auto *rdr = SDL_RWFromConstMem(buf, len);
     if (!rdr)
@@ -264,6 +278,6 @@ Surface::~Surface() { drop(); }
 
 SDL_Surface *Surface::get() const { return surf_; }
 
-Texture Surface::to_texture(SDL_Renderer *ren) const { return Texture::from_surface(ren, get()); }
+Texture Surface::to_texture(SDL_Renderer *const ren) const { return Texture::from_surface(ren, get()); }
 
 #endif // USE_SDL2

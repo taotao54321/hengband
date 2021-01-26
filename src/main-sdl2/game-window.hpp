@@ -8,8 +8,6 @@
 #include <utility>
 #include <variant>
 
-#include <boost/core/noncopyable.hpp>
-
 #include "main-sdl2/font.hpp"
 #include "main-sdl2/prelude.hpp"
 #include "main-sdl2/system.hpp"
@@ -121,8 +119,8 @@ private:
 
 public:
     // noncopyable
-    GameWindow(GameWindow &) = delete;
-    GameWindow &operator=(GameWindow &) = delete;
+    GameWindow(const GameWindow &) = delete;
+    GameWindow &operator=(const GameWindow &) = delete;
 
     // movable
     GameWindow(GameWindow &&other) noexcept = default;

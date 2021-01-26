@@ -22,7 +22,7 @@ private:
     FcPattern *pat_;
 
 public:
-    explicit FontConfigPattern(FcPattern *pat)
+    explicit FontConfigPattern(FcPattern *const pat)
         : pat_(pat)
     {
     }

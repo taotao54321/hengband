@@ -129,6 +129,7 @@ if test "x$enable_sdl2" = "xyes"; then
   PKG_CHECK_MODULES(SDL2, [sdl2])
   PKG_CHECK_MODULES(SDL2_IMAGE, [SDL2_image])
   PKG_CHECK_MODULES(SDL2_TTF, [SDL2_ttf])
+  PKG_CHECK_MODULES(SDL2_MIXER, [SDL2_mixer])
   PKG_CHECK_MODULES(FONTCONFIG, [fontconfig])
   AC_DEFINE([USE_SDL2], [1], [Use SDL2])
   AC_LANG_POP([C++])
