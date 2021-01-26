@@ -98,12 +98,13 @@ std::string read_term(const int term_id, const int c, const int r, const int n)
 {
     const auto *term = &terms[term_id];
 
-    std::string buf(&term->scr->c[r][c], n);
+    std::string euc(&term->scr->c[r][c], n);
+    ALL(std::replace, euc, CH_WALL, '#');
 
-    ALL(std::replace, buf, CH_WALL, '#');
-
-    // TODO: UTF-8 変換、文字境界処理
-    return buf;
+    // TODO:
+    //   これだと EUC-JP の一部を選択したときの動作が完璧ではない
+    //   例えば "長き腕" の先頭 Byte を除いた範囲を選択すると "垢 腕" に変換される
+    return euc_to_utf8_lossy(euc, ' ');
 }
 
 // SDL のウィンドウIDから対応する端末IDを得る。
@@ -483,12 +484,9 @@ extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, 
         }
     }
 
-    // UTF-8 に変換
-    // 変換失敗時はその旨が伝わるような文字列に置換
-    // TODO: lossy な変換関数を設けてそれを使う
-    auto utf8 = euc_to_utf8(euc);
-    if (!utf8)
-        utf8 = std::string(std::size(euc), '?');
+    // UTF-8 に lossy 変換
+    // 変換に失敗しても表示が崩れるだけなので許容(一応置換文字で変換失敗っぽい雰囲気を出す)
+    const auto utf8 = euc_to_utf8_lossy(euc, '?');
 
     const Color fg(angband_color_table[attr][1], angband_color_table[attr][2], angband_color_table[attr][3], 0xFF);
     const Color bg(0, 0, 0, 0xFF);
@@ -500,7 +498,7 @@ extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, 
     win.term_fill_rect(c, r, n, 1, Color(0, 0, 0, 0xFF));
 
     // 先にテキストを描画
-    win.term_draw_text(c, r, *utf8, fg, bg);
+    win.term_draw_text(c, r, utf8, fg, bg);
 
     // 後から壁を描画
     for (const auto off : offs_wall)

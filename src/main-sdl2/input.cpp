@@ -288,8 +288,10 @@ std::string key_sequence(const SDL_TextInputEvent &ev)
 
     // コマンド入力でないなら日本語入力と解釈し、システムエンコーディングに変換
     // できるならそのまま垂れ流す
-    if (auto euc = utf8_to_euc(ev.text))
-        return *euc;
+    const std::string_view utf8(ev.text);
+    const auto [euc, n] = utf8_to_euc(utf8);
+    if (n == std::size(utf8))
+        return euc;
 
     // 変換失敗時は空シーケンスを返す
     return "";
