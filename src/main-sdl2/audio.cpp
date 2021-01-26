@@ -81,8 +81,7 @@ std::map<std::string, std::vector<Sound>> load_sounds(const std::string &dir_xtr
                 snds.emplace_back(std::move(snd));
         }
 
-        const auto k = FORMAT("{}", key);
-        sounds.emplace(k, std::move(snds));
+        sounds.emplace(key, std::move(snds));
     }
 
     return sounds;
