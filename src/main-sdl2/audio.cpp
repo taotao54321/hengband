@@ -29,6 +29,9 @@ std::map<std::string, std::vector<Music>> load_musics(const std::string &dir_xtr
     std::map<std::string, std::vector<Music>> musics;
     for (const auto &[sect_name, sect_map] : ini) {
         for (const auto &[key, value] : sect_map) {
+            if (value.empty())
+                continue;
+
             std::vector<std::string> filenames;
             boost::split(filenames, value, boost::is_any_of("\t "));
 
@@ -64,6 +67,9 @@ std::map<std::string, std::vector<Sound>> load_sounds(const std::string &dir_xtr
 
     std::map<std::string, std::vector<Sound>> sounds;
     for (const auto &[key, value] : sect_map) {
+        if (value.empty())
+            continue;
+
         std::vector<std::string> filenames;
         boost::split(filenames, value, boost::is_any_of("\t "));
 
