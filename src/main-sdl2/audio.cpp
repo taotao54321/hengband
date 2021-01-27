@@ -216,4 +216,10 @@ void AudioAsset::stop_music() const
     (void)Music::null().play();
 }
 
+void AudioAsset::stop_sound() const
+{
+    (void)this;
+    Mix_HaltChannel(-1);
+}
+
 #endif // USE_SDL2

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <array>
-#include <map>
 #include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "main-sdl2/font.hpp"
 #include "main-sdl2/prelude.hpp"
@@ -55,9 +55,14 @@ public:
     [[nodiscard]] GameWindow build(bool is_main) const;
 };
 
+// TODO: UI周り、もうちょいマシな設計がある気はする
+
 struct PresentParam {
     // 各ウィンドウの可視状態
     std::array<bool, 8> visibles;
+
+    bool bgm_enabled;
+    bool se_enabled;
 
     // 対象端末のテキスト選択状態 (c,r,ncol,nrow)
     std::optional<std::tuple<int, int, int, int>> selection;
@@ -72,10 +77,23 @@ struct WindowButton {
     int idx;
 };
 
+struct BgmButton {
+};
+
+struct SeButton {
+};
+
 struct NullElement {
 };
 
-using UiElement = std::variant<TermCell, WindowButton, NullElement>;
+using UiElement = std::variant<TermCell, WindowButton, BgmButton, SeButton, NullElement>;
+
+struct ButtonVisual {
+    Rect rect;
+    Texture tex;
+
+    ButtonVisual(Rect rect, Texture tex);
+};
 
 class GameWindow {
 private:
@@ -87,7 +105,9 @@ private:
     Texture tex_term_; // 端末画面テクスチャ
     Texture tex_ascii_; // ASCII 文字テクスチャキャッシュ (描画高速化用)
     Texture tex_wall_; // 壁画像テクスチャ
-    std::map<std::string, Texture> texs_; // メニューバーの画像など
+    std::vector<ButtonVisual> buttons_window_;
+    std::optional<ButtonVisual> button_bgm_;
+    std::optional<ButtonVisual> button_se_;
 
     // サイズ ncnr_ の端末画面テクスチャを作る。
     [[nodiscard]] Texture init_tex_term() const;
@@ -97,6 +117,10 @@ private:
 
     // 壁画像テクスチャを作る。
     [[nodiscard]] Texture init_tex_wall() const;
+
+    [[nodiscard]] std::vector<ButtonVisual> init_buttons_window() const;
+    [[nodiscard]] std::optional<ButtonVisual> init_button_bgm() const;
+    [[nodiscard]] std::optional<ButtonVisual> init_button_se() const;
 
     GameWindow(bool is_main, Font font, Window win);
 
@@ -118,6 +142,8 @@ private:
 
     // ウィンドウ上の端末画面領域の矩形を得る。
     [[nodiscard]] Rect term_area_rect() const;
+
+    void draw_button(const ButtonVisual &button, bool enabled) const;
 
     friend class GameWindowDesc;
 

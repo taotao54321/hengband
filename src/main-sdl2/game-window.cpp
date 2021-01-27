@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "main-sdl2/asset.hpp"
 #include "main-sdl2/font.hpp"
@@ -133,6 +134,12 @@ GameWindow GameWindowDesc::build(const bool is_main) const
     return game_win;
 }
 
+ButtonVisual::ButtonVisual(Rect rect, Texture tex)
+    : rect(rect)
+    , tex(std::move(tex))
+{
+}
+
 Texture GameWindow::init_tex_term() const
 {
     const auto [w, h] = font_.cr2xy(ncnr_);
@@ -169,6 +176,62 @@ Texture GameWindow::init_tex_wall() const
     return surf.to_texture(ren_.get());
 }
 
+std::vector<ButtonVisual> GameWindow::init_buttons_window() const
+{
+    constexpr std::pair<const u8 *, std::size_t> IMGS[]{
+        { nullptr, 0 },
+        { WINDOW_1_PNG, std::size(WINDOW_1_PNG) },
+        { WINDOW_2_PNG, std::size(WINDOW_2_PNG) },
+        { WINDOW_3_PNG, std::size(WINDOW_3_PNG) },
+        { WINDOW_4_PNG, std::size(WINDOW_4_PNG) },
+        { WINDOW_5_PNG, std::size(WINDOW_5_PNG) },
+        { WINDOW_6_PNG, std::size(WINDOW_6_PNG) },
+        { WINDOW_7_PNG, std::size(WINDOW_7_PNG) },
+    };
+
+    if (!is_main_)
+        return {};
+
+    const int right = client_area_size().first;
+
+    std::vector<ButtonVisual> buttons;
+    for (const auto i : IRANGE(1, 8)) {
+        const int x = right - 32 * (8 - i);
+        const Rect rect(x, 0, 32, 32);
+        const auto [buf, len] = IMGS[i];
+        auto tex = Surface::from_bytes(buf, len).to_texture(ren_.get());
+        buttons.emplace_back(rect, std::move(tex));
+    }
+
+    return buttons;
+}
+
+std::optional<ButtonVisual> GameWindow::init_button_bgm() const
+{
+    if (!is_main_)
+        return std::nullopt;
+
+    const int right = client_area_size().first;
+
+    const Rect rect(right - 32 * 10, 0, 32, 32);
+    auto tex = Surface::from_bytes(BGM_PNG, std::size(BGM_PNG)).to_texture(ren_.get());
+
+    return ButtonVisual{ rect, std::move(tex) };
+}
+
+std::optional<ButtonVisual> GameWindow::init_button_se() const
+{
+    if (!is_main_)
+        return std::nullopt;
+
+    const int right = client_area_size().first;
+
+    const Rect rect(right - 32 * 9, 0, 32, 32);
+    auto tex = Surface::from_bytes(SE_PNG, std::size(SE_PNG)).to_texture(ren_.get());
+
+    return ButtonVisual{ rect, std::move(tex) };
+}
+
 GameWindow::GameWindow(const bool is_main, Font font, Window win)
     : is_main_(is_main)
     , font_(std::move(font))
@@ -178,18 +241,13 @@ GameWindow::GameWindow(const bool is_main, Font font, Window win)
     , tex_term_(init_tex_term())
     , tex_ascii_(init_tex_ascii())
     , tex_wall_(init_tex_wall())
+    , buttons_window_(init_buttons_window())
+    , button_bgm_(init_button_bgm())
+    , button_se_(init_button_se())
 {
     if (is_main_) {
         const auto [w_min, h_min] = client_area_size_for(MAIN_WIN_NCOL_MIN, MAIN_WIN_NROW_MIN);
         SDL_SetWindowMinimumSize(win_.get(), w_min, h_min);
-
-        texs_.emplace("win_1", Surface::from_bytes(WINDOW_1_PNG, std::size(WINDOW_1_PNG)).to_texture(ren_.get()));
-        texs_.emplace("win_2", Surface::from_bytes(WINDOW_2_PNG, std::size(WINDOW_2_PNG)).to_texture(ren_.get()));
-        texs_.emplace("win_3", Surface::from_bytes(WINDOW_3_PNG, std::size(WINDOW_3_PNG)).to_texture(ren_.get()));
-        texs_.emplace("win_4", Surface::from_bytes(WINDOW_4_PNG, std::size(WINDOW_4_PNG)).to_texture(ren_.get()));
-        texs_.emplace("win_5", Surface::from_bytes(WINDOW_5_PNG, std::size(WINDOW_5_PNG)).to_texture(ren_.get()));
-        texs_.emplace("win_6", Surface::from_bytes(WINDOW_6_PNG, std::size(WINDOW_6_PNG)).to_texture(ren_.get()));
-        texs_.emplace("win_7", Surface::from_bytes(WINDOW_7_PNG, std::size(WINDOW_7_PNG)).to_texture(ren_.get()));
     }
 
     term_clear();
@@ -269,6 +327,23 @@ Rect GameWindow::term_area_rect() const
     const int h = font_.h() * ncnr_.second;
 
     return Rect(x, y, w, h);
+}
+
+void GameWindow::draw_button(const ButtonVisual &button, const bool enabled) const
+{
+    const auto rect = button.rect.to_sdl_rect();
+    const auto &tex = button.tex;
+
+    if (SDL_RenderCopy(ren_.get(), tex.get(), nullptr, &rect) != 0)
+        PANIC("SDL_RenderCopy() failed");
+
+    const auto color = enabled ? Color(0xC0, 0xC0, 0x20, 0x60) : Color(0x30, 0x30, 0x30, 0x60);
+    if (SDL_SetRenderDrawBlendMode(ren_.get(), SDL_BLENDMODE_BLEND) != 0)
+        PANIC("SDL_SetRenderDrawBlendMode() failed");
+    if (SDL_SetRenderDrawColor(ren_.get(), color.r(), color.g(), color.b(), color.a()) != 0)
+        PANIC("SDL_SetRenderDrawColor() failed");
+    if (SDL_RenderFillRect(ren_.get(), &rect) != 0)
+        PANIC("SDL_RenderFillRect() failed");
 }
 
 u32 GameWindow::id() const
@@ -395,22 +470,11 @@ void GameWindow::present(const PresentParam &param) const
 
     // メインウィンドウの場合、メニューバー表示
     if (is_main_) {
-        for (const auto i : IRANGE(1, 8)) {
-            const int x = client_area_size().first - 32 * 7 + 32 * (i - 1);
-            const SDL_Rect rect{ x, 0, 32, 32 };
+        for (const auto i : IRANGE(1, 8))
+            draw_button(buttons_window_[i - 1], param.visibles[i]);
 
-            const auto &tex = texs_.at(FORMAT("win_{}", i));
-            if (SDL_RenderCopy(ren_.get(), tex.get(), nullptr, &rect) != 0)
-                PANIC("SDL_RenderCopy() failed");
-
-            const auto color = param.visibles[i] ? Color(0xC0, 0xC0, 0x20, 0x60) : Color(0x30, 0x30, 0x30, 0x60);
-            if (SDL_SetRenderDrawBlendMode(ren_.get(), SDL_BLENDMODE_BLEND) != 0)
-                PANIC("SDL_SetRenderDrawBlendMode() failed");
-            if (SDL_SetRenderDrawColor(ren_.get(), color.r(), color.g(), color.b(), color.a()) != 0)
-                PANIC("SDL_SetRenderDrawColor() failed");
-            if (SDL_RenderFillRect(ren_.get(), &rect) != 0)
-                PANIC("SDL_RenderFillRect() failed");
-        }
+        draw_button(*button_bgm_, param.bgm_enabled);
+        draw_button(*button_se_, param.se_enabled);
     }
 
     // 選択中ならその範囲を表示
@@ -438,9 +502,18 @@ void GameWindow::present(const PresentParam &param) const
 UiElement GameWindow::ui_element_at(const int x, const int y) const
 {
     if (is_main_ && y < MAIN_WIN_MENU_H) {
-        const auto i = (x - (client_area_size().first - 32 * 8)) / 32;
-        if (1 <= i && i < 8)
-            return WindowButton{ i };
+        for (const auto i : IRANGE(1, 8)) {
+            if (buttons_window_[i - 1].rect.contains(x, y))
+                return WindowButton{ i };
+        }
+
+        if (button_bgm_->rect.contains(x, y))
+            return BgmButton{};
+
+        if (button_se_->rect.contains(x, y))
+            return SeButton{};
+
+        return NullElement{};
     }
 
     {

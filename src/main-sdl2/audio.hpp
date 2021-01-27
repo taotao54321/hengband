@@ -99,4 +99,5 @@ public:
     [[nodiscard]] const std::vector<Sound> &sound(const std::string &name) const;
 
     void stop_music() const;
+    void stop_sound() const;
 };

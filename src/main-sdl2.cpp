@@ -124,6 +124,22 @@ std::string read_term(const int term_id, const int c, const int r, const int n)
     return euc_to_utf8_lossy(euc, ' ');
 }
 
+void enable_music() { use_music = true; }
+
+void disable_music()
+{
+    audio->stop_music();
+    use_music = false;
+}
+
+void enable_sound() { use_sound = true; }
+
+void disable_sound()
+{
+    audio->stop_sound();
+    use_sound = false;
+}
+
 // SDL のウィンドウIDから対応する端末IDを得る。
 // 無効なウィンドウIDに対しては std::nullopt を返す。
 // (例えばウィンドウ外でマウスボタンを離したときのウィンドウIDは無効値となる)
@@ -157,6 +173,9 @@ void window_present(const GameWindow &win, const std::optional<std::tuple<int, i
 
     for (const auto i : IRANGE(8))
         param.visibles[i] = wins[i].is_visible();
+
+    param.bgm_enabled = use_music;
+    param.se_enabled = use_sound;
 
     win.present(param);
 }
@@ -240,7 +259,7 @@ errr on_mousedown(const SDL_MouseButtonEvent &ev)
 
     const auto &win = wins[*term_id];
 
-    // ウィンドウトグルボタンのみ処理する。
+    // ボタンのみ処理する。
     // 選択は左ボタンを押してからマウスを初めて動かしたときに開始する。
     // clang-format off
     std::visit(overload{
@@ -248,6 +267,14 @@ errr on_mousedown(const SDL_MouseButtonEvent &ev)
             wins[btn.idx].toggle_visible();
             window_present(win, std::nullopt);
             win.raise();
+        },
+        [&](BgmButton) {
+            use_music ? disable_music() : enable_music();
+            window_present(win, std::nullopt);
+        },
+        [&](SeButton) {
+            use_sound ? disable_sound() : enable_sound();
+            window_present(win, std::nullopt);
         },
         [](TermCell) {},
         [](NullElement) {},
@@ -311,6 +338,8 @@ errr on_mouseup(const SDL_MouseButtonEvent &ev)
             SDL_SetClipboardText(buf.c_str());
         },
         [](WindowButton) {},
+        [](BgmButton) {},
+        [](SeButton) {},
         [](NullElement) {},
     }, win.ui_element_at(ev.x, ev.y));
     // clang-format on
@@ -352,6 +381,8 @@ errr on_mousemotion(const SDL_MouseMotionEvent &ev)
             window_present(win, selection);
         },
         [](WindowButton) {},
+        [](BgmButton) {},
+        [](SeButton) {},
         [](NullElement) {},
     }, win.ui_element_at(ev.x, ev.y));
     // clang-format on
