@@ -424,8 +424,11 @@ errr play_sound(const int id)
         return 1;
     const std::string name(angband_sound_name[id]);
 
-    if (!random_choose(audio->sound(name)).play())
-        EPRINTLN("failed to play sound '{}'", name);
+    // XXX:
+    //   ゲーム側で割と頻繁に sound() を呼び出すため、チャンネル数不足による再
+    //   生失敗がときどき起こる。これをいちいちログとして垂れ流すのは鬱陶しいの
+    //   で無視する。
+    (void)random_choose(audio->sound(name)).play();
 
     return 0;
 }
