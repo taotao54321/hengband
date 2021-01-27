@@ -85,11 +85,15 @@ private:
     Renderer ren_;
     std::pair<int, int> ncnr_; // 端末画面サイズ (ncol,nrow)
     Texture tex_term_; // 端末画面テクスチャ
+    Texture tex_ascii_; // ASCII 文字テクスチャキャッシュ (描画高速化用)
     Texture tex_wall_; // 壁画像テクスチャ
     std::map<std::string, Texture> texs_; // メニューバーの画像など
 
     // サイズ ncnr_ の端末画面テクスチャを作る。
     [[nodiscard]] Texture init_tex_term() const;
+
+    // ASCII 文字テクスチャキャッシュを作る。
+    [[nodiscard]] Texture init_tex_ascii() const;
 
     // 壁画像テクスチャを作る。
     [[nodiscard]] Texture init_tex_wall() const;
@@ -150,7 +154,7 @@ public:
     //   ることがある。等幅フォントであっても文字ごとに高さが異なるのが原因。
     //   文字幅計算の都合上、このクリア処理は呼び出し側に任せている。
     //   (とはいえ EUC-JP でもバイト数と文字幅は厳密には一致しないが)
-    void term_draw_text(int c, int r, const std::string &text, Color fg, Color bg) const;
+    void term_draw_text(int c, int r, const std::string &text, Color color) const;
 
     // 端末画面の文字座標 (c,r) に壁画像を色 color で描画する。
     void term_draw_wall(int c, int r, Color color) const;

@@ -559,8 +559,7 @@ extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, 
     // 変換に失敗しても表示が崩れるだけなので許容(一応置換文字で変換失敗っぽい雰囲気を出す)
     const auto utf8 = euc_to_utf8_lossy(euc, '?');
 
-    const Color fg(angband_color_table[attr][1], angband_color_table[attr][2], angband_color_table[attr][3], 0xFF);
-    const Color bg(0, 0, 0, 0xFF);
+    const Color color(angband_color_table[attr][1], angband_color_table[attr][2], angband_color_table[attr][3], 0xFF);
 
     // 最初に draw_blanks() を行わないと画面にゴミが残ることがある。
     // draw_text() の描画範囲はテキスト内の文字によって変動するため。
@@ -569,11 +568,11 @@ extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, 
     win.term_fill_rect(c, r, n, 1, Color(0, 0, 0, 0xFF));
 
     // 先にテキストを描画
-    win.term_draw_text(c, r, utf8, fg, bg);
+    win.term_draw_text(c, r, utf8, color);
 
     // 後から壁を描画
     for (const auto off : offs_wall)
-        win.term_draw_wall(c + off, r, fg);
+        win.term_draw_wall(c + off, r, color);
 
     return 0;
 }

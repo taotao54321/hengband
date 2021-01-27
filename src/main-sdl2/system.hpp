@@ -8,7 +8,7 @@
 
 #include <SDL.h>
 
-#include "prelude.hpp"
+#include "main-sdl2/prelude.hpp"
 
 class Color {
 private:
@@ -139,6 +139,9 @@ public:
     // サイズ (w,h) の RGBA サーフェスを作る。
     static Surface create(int w, int h);
 
+    // サイズ (w,h) かつ color で塗りつぶされた RGBA サーフェスを作る。
+    static Surface create(int w, int h, Color color);
+
     // サイズ (w,h) に tile を敷き詰めた RGBA サーフェスを作る。
     static Surface create_tiled(SDL_Surface *tile, int w, int h);
 
@@ -152,6 +155,8 @@ public:
     ~Surface();
 
     [[nodiscard]] SDL_Surface *get() const;
+
+    [[nodiscard]] u32 map_color(Color color) const;
 
     [[nodiscard]] Texture to_texture(SDL_Renderer *ren) const;
 };

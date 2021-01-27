@@ -139,6 +139,29 @@ Texture GameWindow::init_tex_term() const
     return Texture::create_target(ren_.get(), w, h);
 }
 
+Texture GameWindow::init_tex_ascii() const
+{
+    constexpr int ASCII_MIN = 0x20;
+    constexpr int ASCII_MAX = 0x7E;
+
+    const Color COLOR_FG(0xFF, 0xFF, 0xFF, 0xFF);
+    const Color COLOR_BG(0, 0, 0, 0xFF);
+
+    const auto w = font_.w() * (ASCII_MAX - ASCII_MIN + 1);
+    const auto h = font_.h();
+    const auto surf = Surface::create(w, h, COLOR_BG);
+
+    for (const auto ch : IRANGE(ASCII_MIN, ASCII_MAX + 1)) {
+        const auto surf_ch = font_.render(std::string(1, char(ch)), COLOR_FG, COLOR_BG);
+        const auto x = font_.w() * (ch - ASCII_MIN);
+        SDL_Rect rect{ x, 0, 0, 0 }; // w, h は無視される
+        if (SDL_BlitSurface(surf_ch.get(), nullptr, surf.get(), &rect) != 0)
+            PANIC("SDL_BlitSurface() failed");
+    }
+
+    return surf.to_texture(ren_.get());
+}
+
 Texture GameWindow::init_tex_wall() const
 {
     const auto surf_tile = Surface::from_bytes(WALL_BMP, std::size(WALL_BMP));
@@ -153,6 +176,7 @@ GameWindow::GameWindow(const bool is_main, Font font, Window win)
     , ren_(Renderer::with_window(win_.get()))
     , ncnr_(term_size_for(client_area_size()))
     , tex_term_(init_tex_term())
+    , tex_ascii_(init_tex_ascii())
     , tex_wall_(init_tex_wall())
 {
     if (is_main_) {
@@ -300,24 +324,40 @@ void GameWindow::term_fill_rect(const int c, const int r, const int ncol, const 
         PANIC("SDL_RenderFillRect() failed");
 }
 
-void GameWindow::term_draw_text(const int c, const int r, const std::string &text, Color fg, Color bg) const
+void GameWindow::term_draw_text(const int c, const int r, const std::string &text, Color color) const
 {
-    // TODO:
-    //   ナイーブな実装では毎回 Surface と Texture を作るため、複雑な地形(アン
-    //   グウィルなど)ではそれなりに重くなる。
-    //   ASCII 文字のみについてテクスチャキャッシュを持つなど工夫すべきか。
+    constexpr int ASCII_MIN = 0x20;
+    constexpr int ASCII_MAX = 0x7E;
+
+    const Color COLOR_BG(0, 0, 0, 0xFF);
 
     if (SDL_SetRenderTarget(ren_.get(), tex_term_.get()) != 0)
         PANIC("SDL_SetRenderTarget() failed");
 
-    const auto surf = font_.render(text, fg, bg);
+    const auto [x_orig, y_orig] = font_.cr2xy(c, r);
 
-    const auto [x, y] = font_.cr2xy(c, r);
-    const SDL_Rect rect{ x, y, surf.get()->w, surf.get()->h };
+    if (ALL(std::all_of, text, [](const char c) { return ASCII_MIN <= c && c <= ASCII_MAX; })) {
+        // text が ASCII 表示可能文字のみからなる場合、テクスチャキャッシュを使って
+        // 高速に描画する。
+        for (const auto i : IRANGE(0, int(std::size(text)))) {
+            const auto x_src = font_.w() * (text[i] - ASCII_MIN);
+            const auto x_dst = x_orig + font_.w() * i;
+            const SDL_Rect rect_src{ x_src, 0, font_.w(), font_.h() };
+            const SDL_Rect rect_dst{ x_dst, y_orig, font_.w(), font_.h() };
+            if (SDL_SetTextureColorMod(tex_ascii_.get(), color.r(), color.g(), color.b()) != 0)
+                PANIC("SDL_SetTextureColorMod() failed");
+            if (SDL_RenderCopy(ren_.get(), tex_ascii_.get(), &rect_src, &rect_dst) != 0)
+                PANIC("SDL_RenderCopy() failed");
+        }
+    } else {
+        // text が非 ASCII を含む場合はナイーブな方法で描画する。
+        const auto surf = font_.render(text, color, COLOR_BG);
+        const auto tex = surf.to_texture(ren_.get());
 
-    const auto tex = surf.to_texture(ren_.get());
-    if (SDL_RenderCopy(ren_.get(), tex.get(), nullptr, &rect) != 0)
-        PANIC("SDL_RenderCopy() failed");
+        const SDL_Rect rect{ x_orig, y_orig, surf.get()->w, surf.get()->h };
+        if (SDL_RenderCopy(ren_.get(), tex.get(), nullptr, &rect) != 0)
+            PANIC("SDL_RenderCopy() failed");
+    }
 }
 
 void GameWindow::term_draw_wall(const int c, const int r, Color color) const

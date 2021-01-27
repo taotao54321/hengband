@@ -232,6 +232,14 @@ Surface Surface::create(const int w, const int h)
     return Surface(surf);
 }
 
+Surface Surface::create(const int w, const int h, Color color)
+{
+    auto surf = create(w, h);
+    if (SDL_FillRect(surf.get(), nullptr, surf.map_color(color)) != 0)
+        PANIC("SDL_FillRect() failed");
+    return surf;
+}
+
 Surface Surface::create_tiled(SDL_Surface *const tile, const int w, const int h)
 {
     const int w_tile = tile->w;
@@ -240,7 +248,7 @@ Surface Surface::create_tiled(SDL_Surface *const tile, const int w, const int h)
     auto surf = Surface::create(w, h);
     for (int y = 0; y < h; y += h_tile) {
         for (int x = 0; x < w; x += w_tile) {
-            SDL_Rect rect{ x, y, w_tile, h_tile };
+            SDL_Rect rect{ x, y, 0, 0 }; // w, h は無視される
             if (SDL_BlitSurface(tile, nullptr, surf.get(), &rect) != 0)
                 PANIC("SDL_BlitSurface() failed");
         }
@@ -277,6 +285,8 @@ Surface &Surface::operator=(Surface &&rhs) noexcept
 Surface::~Surface() { drop(); }
 
 SDL_Surface *Surface::get() const { return surf_; }
+
+u32 Surface::map_color(Color color) const { return SDL_MapRGBA(surf_->format, color.r(), color.g(), color.b(), color.a()); }
 
 Texture Surface::to_texture(SDL_Renderer *const ren) const { return Texture::from_surface(ren, get()); }
 
