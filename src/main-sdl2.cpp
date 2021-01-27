@@ -617,6 +617,9 @@ extern "C" void quit_hook(concptr)
     for (const auto i : IRANGE(TERM_COUNT))
         config.win_descs[i] = wins[i].desc();
 
+    config.bgm_enabled = use_music;
+    config.se_enabled = use_sound;
+
     if (!config.save())
         EPRINTLN("failed to save config");
 }
@@ -657,10 +660,10 @@ extern "C" void init_sdl2(int /*argc*/, char ** /*argv*/)
     for (const auto &win : wins)
         window_present(win, std::nullopt);
 
-    quit_aux = quit_hook;
+    config.bgm_enabled ? enable_music() : disable_music();
+    config.se_enabled ? enable_sound() : disable_sound();
 
-    use_music = true;
-    use_sound = true;
+    quit_aux = quit_hook;
 
     // メインウィンドウをアクティブ化
     wins[0].raise();

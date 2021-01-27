@@ -117,6 +117,8 @@ picojson::value json_value_int(const int x) { return picojson::value(double(x));
 
 Config::Config()
     : win_descs()
+    , bgm_enabled(true)
+    , se_enabled(true)
 {
 }
 
@@ -172,6 +174,12 @@ std::optional<Config> Config::load()
         }
     }
 
+    if (const auto bgm_enabled = json_object_get<bool>(*json, "bgm_enabled"))
+        config.bgm_enabled = *bgm_enabled;
+
+    if (const auto se_enabled = json_object_get<bool>(*json, "se_enabled"))
+        config.se_enabled = *se_enabled;
+
     return config;
 }
 
@@ -194,6 +202,9 @@ bool Config::save() const
         windows.emplace_back(picojson::value(window));
     }
     json.emplace("windows", windows);
+
+    json.emplace("bgm_enabled", bgm_enabled);
+    json.emplace("se_enabled", se_enabled);
 
     const auto path = get_ensured_config_path();
     if (!path)

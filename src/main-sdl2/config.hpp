@@ -7,6 +7,8 @@
 
 struct Config {
     std::array<GameWindowDesc, 8> win_descs;
+    bool bgm_enabled;
+    bool se_enabled;
 
     // デフォルト設定を得る。
     Config();
