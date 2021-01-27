@@ -340,31 +340,31 @@ P:^_SxKP_9\r
 # Ctrl + テンキー
 
 A:\e\e\\+1
-P:^_SxKP_1\r
+P:^_CxKP_1\r
 
 A:\e\e\\+2
-P:^_SxKP_2\r
+P:^_CxKP_2\r
 
 A:\e\e\\+3
-P:^_SxKP_3\r
+P:^_CxKP_3\r
 
 A:\e\e\\+4
-P:^_SxKP_4\r
+P:^_CxKP_4\r
 
 A:\e\e\\+5
-P:^_SxKP_5\r
+P:^_CxKP_5\r
 
 A:\e\e\\+6
-P:^_SxKP_6\r
+P:^_CxKP_6\r
 
 A:\e\e\\+7
-P:^_SxKP_7\r
+P:^_CxKP_7\r
 
 A:\e\e\\+8
-P:^_SxKP_8\r
+P:^_CxKP_8\r
 
 A:\e\e\\+9
-P:^_SxKP_9\r
+P:^_CxKP_9\r
 
 # numpad enter
 
