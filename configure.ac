@@ -45,6 +45,7 @@ AC_SUBST(DEFAULT_VAR_PATH)
 
 dnl Checks for programs.
 AC_PROG_CC
+dnl AC_PROG_CXX を条件節内に入れると configure がこけることがある
 AC_PROG_CXX
 
 AC_ARG_ENABLE(japanese,
@@ -121,7 +122,7 @@ if test "$use_japanese" != no; then
   fi
 fi
 
-if test "x$enable_sdl2" = "xyes"; then
+AS_IF([test "x$enable_sdl2" = "xyes"], [
   AC_LANG_PUSH([C++])
   AX_CXX_COMPILE_STDCXX_17
   AX_BOOST_BASE([1.70], , [AC_MSG_ERROR([Boost not found])])
@@ -133,7 +134,7 @@ if test "x$enable_sdl2" = "xyes"; then
   PKG_CHECK_MODULES(FONTCONFIG, [fontconfig])
   AC_DEFINE([USE_SDL2], [1], [Use SDL2])
   AC_LANG_POP([C++])
-fi
+])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h strings.h sys/file.h sys/ioctl.h sys/time.h termio.h unistd.h stdint.h)
