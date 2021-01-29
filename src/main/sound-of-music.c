@@ -76,21 +76,9 @@ void select_floor_music(player_type *player_ptr)
             return;
     }
 
-    // ダンジョン内クエスト用BGMに切り替わらない問題の暫定的な修正
-    // (https://osdn.net/projects/hengband/ticket/41134)
-    //
-    // ワーグクエスト、およびランダムクエストが該当。
-    // これらに突入した際は inside_quest が更新されないようなので、
-    // quest_number() で改めてクエストIDを取得する。
-    //
-    // TODO: 根本的には inside_quest の更新処理を見直すべきではある。
-    {
-        QUEST_IDX id = quest_number(player_ptr, player_ptr->current_floor_ptr->dun_level);
-        if (id != 0) {
-            if (!play_music(TERM_XTRA_MUSIC_QUEST, id))
-                return;
-        }
-    }
+    QUEST_IDX id = quest_number(player_ptr, player_ptr->current_floor_ptr->dun_level);
+    if ((id != 0) && !play_music(TERM_XTRA_MUSIC_QUEST, id))
+        return;
 
     if (player_ptr->dungeon_idx) {
         if (player_ptr->feeling == 2) {
