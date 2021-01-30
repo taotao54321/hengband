@@ -42,6 +42,27 @@ errr play_music(int type, int val)
 }
 
 /*
+ * @brief ダンジョン用の通常BGMまたはクエスト用BGM
+ * @param player_ptr プレーヤーへの参照ポインタ
+ * @return BGMを鳴らすか後続処理で鳴らすBGMを決めるならばTRUE、鳴らさないならばFALSE
+ * @details
+ */
+bool dungeon_quest_music(player_type *player_ptr)
+{
+    QUEST_IDX quest_id = player_ptr->current_floor_ptr->inside_quest;
+    if (quest_id == 0)
+        quest_id = quest_number(player_ptr, player_ptr->current_floor_ptr->dun_level);
+
+    if (quest_id == 0)
+        return TRUE;
+
+    if (!play_music(TERM_XTRA_MUSIC_QUEST, quest_id))
+        return FALSE;
+
+    return play_music(TERM_XTRA_MUSIC_BASIC, MUSIC_BASIC_QUEST) != 0;
+}
+
+/*
  * Hack -- Select floor music.
  */
 void select_floor_music(player_type *player_ptr)
@@ -69,18 +90,8 @@ void select_floor_music(player_type *player_ptr)
             return;
     }
 
-    {
-        int quest_id = player_ptr->current_floor_ptr->inside_quest;
-        if (quest_id == 0)
-            quest_id = quest_number(player_ptr, player_ptr->current_floor_ptr->dun_level);
-
-        if (quest_id != 0) {
-            if (!play_music(TERM_XTRA_MUSIC_QUEST, quest_id))
-                return;
-            if (!play_music(TERM_XTRA_MUSIC_BASIC, MUSIC_BASIC_QUEST))
-                return;
-        }
-    }
+    if (!dungeon_quest_music(player_ptr))
+        return;
 
     if (player_ptr->dungeon_idx) {
         if (player_ptr->feeling == 2) {
