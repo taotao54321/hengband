@@ -459,11 +459,11 @@ errr play_sound(const int id)
         return 1;
     const std::string name(angband_sound_name[id]);
 
-    // チャンネル数不足のみログ出力する(これは異種サウンドを同時再生しすぎとい
-    // うことなので報告に値する)
+    // play_sound() の失敗はとりあえず無視しておく。
+    // 同一サウンドの同時再生制限があっても、マクロを使ったりしていると普通に
+    // チャンネル数不足になることは考えられるため。
     const auto &sound = random_choose(audio_asset->sound(name));
-    if (mixer->play_sound(sound.get()) == MixerSoundPlayResult::CHANNEL_FULL)
-        EPRINTLN("no channel to play sound '{}'", name);
+    (void)mixer->play_sound(sound.get());
 
     return 0;
 }
