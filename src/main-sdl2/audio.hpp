@@ -121,12 +121,12 @@ private:
 public:
     Mixer(int n_channel, int max_same_sound);
 
-    // music を無限ループ設定で再生する。成功したかどうかを返す。
-    // nullptr を渡すと単に現在の音楽を停止し、false を返す。
+    // music を無限ループ設定で再生する。
+    // nullptr を渡すと単に現在の音楽を停止し、NULL_MUSIC を返す。
     [[nodiscard]] MixerMusicPlayResult play_music(Mix_Music *music) const;
 
     // chunk を1回だけ再生する。MixerSoundPlayResult を返す。
-    // nullptr を渡すと何もせず FAIL を返す。
+    // nullptr を渡すと何もせず NULL_SOUND を返す。
     MixerSoundPlayResult play_sound(Mix_Chunk *chunk);
 
     void stop_music() const;
