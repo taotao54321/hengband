@@ -45,6 +45,9 @@ extern "C" {
 
 namespace {
 
+constexpr int MIXER_CHANNEL_COUNT = 16;
+constexpr int MIXER_MAX_SAME_SOUND = 3; // 同一サウンドの最大同時再生数
+
 // 壁の内部コード。lib/pref/font-sdl.prf で指定されている。
 // この値は EUC-JP と干渉しない。
 constexpr char CH_WALL = '\x7F';
@@ -64,7 +67,8 @@ struct SelectionAnchor {
 Config config{};
 
 System *sys{};
-AudioAsset *audio{};
+AudioAsset *audio_asset{};
+Mixer *mixer{};
 
 std::vector<GameWindow> wins{};
 std::array<term_type, TERM_COUNT> terms{};
@@ -128,7 +132,7 @@ void enable_music() { use_music = true; }
 
 void disable_music()
 {
-    audio->stop_music();
+    mixer->stop_music();
     use_music = false;
 }
 
@@ -136,7 +140,7 @@ void enable_sound() { use_sound = true; }
 
 void disable_sound()
 {
-    audio->stop_sound();
+    mixer->stop_sound();
     use_sound = false;
 }
 
@@ -455,13 +459,11 @@ errr play_sound(const int id)
         return 1;
     const std::string name(angband_sound_name[id]);
 
-    // XXX:
-    //   ゲーム側で割と頻繁に sound() を呼び出すため、チャンネル数不足による再
-    //   生失敗がときどき起こる。これをいちいちログとして垂れ流すのは鬱陶しいの
-    //   で無視する。
-    //   同じ効果音を多重再生してしまうのが主な原因なので、全効果音に独立した
-    //   チャンネルを割り当て、多重再生が起こらないように制御すればいいかも...?
-    (void)random_choose(audio->sound(name)).play();
+    // チャンネル数不足のみログ出力する(これは異種サウンドを同時再生しすぎとい
+    // うことなので報告に値する)
+    const auto &sound = random_choose(audio_asset->sound(name));
+    if (mixer->play_sound(sound.get()) == MixerSoundPlayResult::CHANNEL_FULL)
+        EPRINTLN("no channel to play sound '{}'", name);
 
     return 0;
 }
@@ -474,7 +476,8 @@ errr play_music_basic(const int id)
         return 1;
     const std::string name(angband_music_basic_name[id]);
 
-    if (!random_choose(audio->music(CATEGORY, name)).play())
+    const auto &music = random_choose(audio_asset->music(CATEGORY, name));
+    if (!mixer->play_music(music.get()))
         EPRINTLN("failed to play music '{}/{}'", CATEGORY, name);
 
     return 0;
@@ -484,7 +487,8 @@ errr play_music_category(const std::string &category, const int id)
 {
     const auto name = FORMAT("{:03}", id);
 
-    if (!random_choose(audio->music(category, name)).play())
+    const auto &music = random_choose(audio_asset->music(category, name));
+    if (!mixer->play_music(music.get()))
         EPRINTLN("failed to play music '{}/{}", category, name);
 
     return 0;
@@ -540,7 +544,7 @@ extern "C" errr term_xtra_sdl2(const int name, const int value)
         res = play_music_category("Town", value);
         break;
     case TERM_XTRA_MUSIC_MUTE:
-        audio->stop_music();
+        mixer->stop_music();
         break;
     default:
         break;
@@ -637,7 +641,8 @@ extern "C" void init_sdl2(int /*argc*/, char ** /*argv*/)
         config = *config_loaded;
 
     sys = new System;
-    audio = new AudioAsset(ANGBAND_DIR_XTRA);
+    audio_asset = new AudioAsset(ANGBAND_DIR_XTRA);
+    mixer = new Mixer(MIXER_CHANNEL_COUNT, MIXER_MAX_SAME_SOUND);
 
     for (const auto i : IRANGE(TERM_COUNT)) {
         const auto is_main = i == 0;

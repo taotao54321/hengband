@@ -39,7 +39,7 @@ std::map<std::string, std::vector<Music>> load_musics(const std::string &dir_xtr
             for (const auto &filename : filenames) {
                 const auto path = FORMAT("{}/{}", dir, filename);
                 auto mus = Music::load(path);
-                if (!mus.is_null())
+                if (mus.get())
                     muss.emplace_back(std::move(mus));
             }
 
@@ -77,7 +77,7 @@ std::map<std::string, std::vector<Sound>> load_sounds(const std::string &dir_xtr
         for (const auto &filename : filenames) {
             const auto path = FORMAT("{}/{}", dir, filename);
             auto snd = Sound::load(path);
-            if (!snd.is_null())
+            if (snd.get())
                 snds.emplace_back(std::move(snd));
         }
 
@@ -125,16 +125,7 @@ Music &Music::operator=(Music &&rhs) noexcept
 
 Music::~Music() { drop(); }
 
-bool Music::is_null() const { return !bool(music_); }
-
-bool Music::play() const
-{
-    Mix_HaltMusic();
-    if (!music_)
-        return true;
-
-    return Mix_PlayMusic(music_, -1) == 0;
-}
+Mix_Music *Music::get() const { return music_; }
 
 Sound::Sound(Mix_Chunk *const chunk)
     : chunk_(chunk)
@@ -173,15 +164,7 @@ Sound &Sound::operator=(Sound &&rhs) noexcept
 
 Sound::~Sound() { drop(); }
 
-bool Sound::is_null() const { return !bool(chunk_); }
-
-bool Sound::play() const
-{
-    if (!chunk_)
-        return true;
-
-    return Mix_PlayChannel(-1, chunk_, 0) >= 0;
-}
+Mix_Chunk *Sound::get() const { return chunk_; }
 
 AudioAsset::AudioAsset(const std::string &dir_xtra)
 {
@@ -210,13 +193,62 @@ const std::vector<Sound> &AudioAsset::sound(const std::string &name) const
     return it->second;
 }
 
-void AudioAsset::stop_music() const
+Mixer::Mixer(const int n_channel, const int max_same_sound)
+    : max_same_sound_(max_same_sound)
 {
-    (void)this;
-    (void)Music::null().play();
+    const auto n_channel_actual = Mix_AllocateChannels(n_channel);
+    if (n_channel != n_channel_actual)
+        EPRINTLN("Mixer: {} channels requested, but only {} channels allocated", n_channel, n_channel_actual);
+
+    chunk_of_channel_.assign(n_channel_actual, nullptr);
 }
 
-void AudioAsset::stop_sound() const
+bool Mixer::play_music(Mix_Music *music) const
+{
+    (void)this;
+
+    Mix_HaltMusic();
+    if (!music)
+        return true;
+
+    return Mix_PlayMusic(music, -1) == 0;
+}
+
+MixerSoundPlayResult Mixer::play_sound(Mix_Chunk *chunk)
+{
+    if (!chunk)
+        return MixerSoundPlayResult::OK;
+
+    // 同一サウンドが現在いくつ再生されているか調べる
+    // 既に再生終了したエントリは nullptr にしておく
+    int same_sound = 0;
+    for (const auto i : IRANGE(std::size(chunk_of_channel_))) {
+        if (chunk_of_channel_[i] == chunk) {
+            if (bool(Mix_Playing(i)))
+                same_sound += 1;
+            else
+                chunk_of_channel_[i] = nullptr;
+        }
+    }
+    if (same_sound >= max_same_sound_)
+        return MixerSoundPlayResult::SAME_SOUND_FULL;
+
+    const auto chan = Mix_PlayChannel(-1, chunk, 0);
+    if (chan < 0)
+        return MixerSoundPlayResult::CHANNEL_FULL;
+
+    chunk_of_channel_[chan] = chunk;
+
+    return MixerSoundPlayResult::OK;
+}
+
+void Mixer::stop_music() const
+{
+    (void)this;
+    Mix_HaltMusic();
+}
+
+void Mixer::stop_sound() const
 {
     (void)this;
     Mix_HaltChannel(-1);

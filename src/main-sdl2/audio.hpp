@@ -33,11 +33,7 @@ public:
 
     ~Music();
 
-    [[nodiscard]] bool is_null() const;
-
-    // 成功したかどうかを返す。
-    // 自身が null object の場合は何もせず true を返す(再生中の音楽は止まる)。
-    [[nodiscard]] bool play() const;
+    [[nodiscard]] Mix_Music *get() const;
 };
 
 // インスタンスが null object の場合もある。
@@ -62,11 +58,7 @@ public:
 
     ~Sound();
 
-    [[nodiscard]] bool is_null() const;
-
-    // 成功したかどうかを返す。
-    // 自身が null object の場合は何もせず true を返す。
-    [[nodiscard]] bool play() const;
+    [[nodiscard]] Mix_Chunk *get() const;
 };
 
 // インスタンスが null object の場合もある。
@@ -97,6 +89,38 @@ public:
     // 名前を指定して Sound を得る。
     // 自身が null object の場合は null object を返す。
     [[nodiscard]] const std::vector<Sound> &sound(const std::string &name) const;
+};
+
+enum class MixerSoundPlayResult {
+    OK,
+    CHANNEL_FULL, // 空きチャンネルがない
+    SAME_SOUND_FULL, // 同一サウンドの最大同時再生数に達している
+};
+
+// 同一サウンドの同時再生制限付きミキサー。
+// 例えば大量の敵を同時に倒したときに敵の死亡音が大量に同時再生されると、
+// SDL_mixer のチャンネルが占有されて他のサウンドが再生できなくなるし、単純に音
+// 量が増幅されすぎてビックリする。よって制限を設ける。
+//
+// 事前に Mix_Init(), Mix_OpenAudio() を呼んでいることを仮定。
+class Mixer {
+private:
+    // チャンネル i で最後に再生したサウンド
+    std::vector<Mix_Chunk *> chunk_of_channel_;
+
+    // 同一サウンドの最大同時再生数
+    int max_same_sound_;
+
+public:
+    Mixer(int n_channel, int max_same_sound);
+
+    // music を無限ループ設定で再生する。成功したかどうかを返す。
+    // nullptr を渡すと単に現在の音楽を停止し、true を返す。
+    [[nodiscard]] bool play_music(Mix_Music *music) const;
+
+    // chunk を1回だけ再生する。MixerSoundPlayResult を返す。
+    // nullptr を渡すと何もせず OK を返す。
+    MixerSoundPlayResult play_sound(Mix_Chunk *chunk);
 
     void stop_music() const;
     void stop_sound() const;
