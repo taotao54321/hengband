@@ -203,21 +203,21 @@ Mixer::Mixer(const int n_channel, const int max_same_sound)
     chunk_of_channel_.assign(n_channel_actual, nullptr);
 }
 
-bool Mixer::play_music(Mix_Music *music) const
+MixerMusicPlayResult Mixer::play_music(Mix_Music *music) const
 {
     (void)this;
 
     Mix_HaltMusic();
     if (!music)
-        return true;
+        return MixerMusicPlayResult::NULL_MUSIC;
 
-    return Mix_PlayMusic(music, -1) == 0;
+    return Mix_PlayMusic(music, -1) == 0 ? MixerMusicPlayResult::OK : MixerMusicPlayResult::FAIL;
 }
 
 MixerSoundPlayResult Mixer::play_sound(Mix_Chunk *chunk)
 {
     if (!chunk)
-        return MixerSoundPlayResult::OK;
+        return MixerSoundPlayResult::NULL_SOUND;
 
     // 同一サウンドが現在いくつ再生されているか調べる
     // 既に再生終了したエントリは nullptr にしておく

@@ -91,8 +91,15 @@ public:
     [[nodiscard]] const std::vector<Sound> &sound(const std::string &name) const;
 };
 
+enum class MixerMusicPlayResult {
+    OK,
+    NULL_MUSIC, // ゲーム側で「この音楽がなければ他の音楽を試す」処理があるので必要
+    FAIL, // 何らかの理由で失敗
+};
+
 enum class MixerSoundPlayResult {
     OK,
+    NULL_SOUND, // 一応 Music 側に合わせた
     CHANNEL_FULL, // 空きチャンネルがない
     SAME_SOUND_FULL, // 同一サウンドの最大同時再生数に達している
 };
@@ -115,11 +122,11 @@ public:
     Mixer(int n_channel, int max_same_sound);
 
     // music を無限ループ設定で再生する。成功したかどうかを返す。
-    // nullptr を渡すと単に現在の音楽を停止し、true を返す。
-    [[nodiscard]] bool play_music(Mix_Music *music) const;
+    // nullptr を渡すと単に現在の音楽を停止し、false を返す。
+    [[nodiscard]] MixerMusicPlayResult play_music(Mix_Music *music) const;
 
     // chunk を1回だけ再生する。MixerSoundPlayResult を返す。
-    // nullptr を渡すと何もせず OK を返す。
+    // nullptr を渡すと何もせず FAIL を返す。
     MixerSoundPlayResult play_sound(Mix_Chunk *chunk);
 
     void stop_music() const;

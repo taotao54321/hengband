@@ -459,13 +459,34 @@ errr play_sound(const int id)
         return 1;
     const std::string name(angband_sound_name[id]);
 
-    // play_sound() の失敗はとりあえず無視しておく。
-    // 同一サウンドの同時再生制限があっても、マクロを使ったりしていると普通に
-    // チャンネル数不足になることは考えられるため。
+    // mixer->play_sound() の結果が OK 以外なら一応失敗を返しておく。
+    // 失敗時はいかなる理由であれログ出力は行わない。同一サウンドの同時再生制限
+    // があっても、マクロを使ったりしていると普通にチャンネル数不足になることは
+    // 考えられるため、いちいち出力すると煩わしい。
     const auto &sound = random_choose(audio_asset->sound(name));
-    (void)mixer->play_sound(sound.get());
+    if (mixer->play_sound(sound.get()) != MixerSoundPlayResult::OK)
+        return 1;
 
     return 0;
+}
+
+errr do_play_music(const std::string &category, const std::string &name)
+{
+    const auto &music = random_choose(audio_asset->music(category, name));
+
+    // mixer->play_music() の結果が OK 以外なら失敗を返す。
+    // 例えば個別クエストBGM未設定時に汎用クエストBGMを鳴らすような処理に必要。
+    switch (mixer->play_music(music.get())) {
+    case MixerMusicPlayResult::FAIL:
+        EPRINTLN("failed to play music '{}/{}'", category, name);
+        [[fallthrough]];
+    case MixerMusicPlayResult::NULL_MUSIC:
+        return 1;
+    case MixerMusicPlayResult::OK:
+        return 0;
+    default:
+        PANIC("unreachable");
+    }
 }
 
 errr play_music_basic(const int id)
@@ -476,22 +497,14 @@ errr play_music_basic(const int id)
         return 1;
     const std::string name(angband_music_basic_name[id]);
 
-    const auto &music = random_choose(audio_asset->music(CATEGORY, name));
-    if (!mixer->play_music(music.get()))
-        EPRINTLN("failed to play music '{}/{}'", CATEGORY, name);
-
-    return 0;
+    return do_play_music(CATEGORY, name);
 }
 
 errr play_music_category(const std::string &category, const std::string &prefix, const int id)
 {
     const auto name = FORMAT("{}{:03}", prefix, id);
 
-    const auto &music = random_choose(audio_asset->music(category, name));
-    if (!mixer->play_music(music.get()))
-        EPRINTLN("failed to play music '{}/{}", category, name);
-
-    return 0;
+    return do_play_music(category, name);
 }
 
 extern "C" errr term_xtra_sdl2(const int name, const int value)
