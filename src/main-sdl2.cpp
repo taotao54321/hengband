@@ -483,9 +483,9 @@ errr play_music_basic(const int id)
     return 0;
 }
 
-errr play_music_category(const std::string &category, const int id)
+errr play_music_category(const std::string &category, const std::string &prefix, const int id)
 {
-    const auto name = FORMAT("{:03}", id);
+    const auto name = FORMAT("{}{:03}", prefix, id);
 
     const auto &music = random_choose(audio_asset->music(category, name));
     if (!mixer->play_music(music.get()))
@@ -535,13 +535,13 @@ extern "C" errr term_xtra_sdl2(const int name, const int value)
         res = play_music_basic(value);
         break;
     case TERM_XTRA_MUSIC_DUNGEON:
-        res = play_music_category("Dungeon", value);
+        res = play_music_category("Dungeon", "dungeon", value);
         break;
     case TERM_XTRA_MUSIC_QUEST:
-        res = play_music_category("Quest", value);
+        res = play_music_category("Quest", "quest", value);
         break;
     case TERM_XTRA_MUSIC_TOWN:
-        res = play_music_category("Town", value);
+        res = play_music_category("Town", "town", value);
         break;
     case TERM_XTRA_MUSIC_MUTE:
         mixer->stop_music();
