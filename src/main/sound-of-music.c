@@ -69,16 +69,18 @@ void select_floor_music(player_type *player_ptr)
             return;
     }
 
-    if (player_ptr->current_floor_ptr->inside_quest) {
-        if (!play_music(TERM_XTRA_MUSIC_QUEST, player_ptr->current_floor_ptr->inside_quest))
-            return;
-        if (!play_music(TERM_XTRA_MUSIC_BASIC, MUSIC_BASIC_QUEST))
-            return;
-    }
+    {
+        int quest_id = player_ptr->current_floor_ptr->inside_quest;
+        if (quest_id == 0)
+            quest_id = quest_number(player_ptr, player_ptr->current_floor_ptr->dun_level);
 
-    QUEST_IDX id = quest_number(player_ptr, player_ptr->current_floor_ptr->dun_level);
-    if ((id != 0) && !play_music(TERM_XTRA_MUSIC_QUEST, id))
-        return;
+        if (quest_id != 0) {
+            if (!play_music(TERM_XTRA_MUSIC_QUEST, quest_id))
+                return;
+            if (!play_music(TERM_XTRA_MUSIC_BASIC, MUSIC_BASIC_QUEST))
+                return;
+        }
+    }
 
     if (player_ptr->dungeon_idx) {
         if (player_ptr->feeling == 2) {
