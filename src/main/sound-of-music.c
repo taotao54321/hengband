@@ -45,7 +45,7 @@ errr play_music(int type, int val)
  * @brief ダンジョン用の通常BGMまたはクエスト用BGM
  * @param player_ptr プレーヤーへの参照ポインタ
  * @return BGMを鳴らすか後続処理で鳴らすBGMを決めるならばTRUE、鳴らさないならばFALSE
- * @details
+ * @details v3.0.0現在、フロアクエストとはワーグクエストとランダムクエストのみ該当する
  */
 bool dungeon_quest_music(player_type *player_ptr)
 {
@@ -55,10 +55,10 @@ bool dungeon_quest_music(player_type *player_ptr)
 
     if (quest_id == 0)
         return TRUE;
-
+    
     if (!play_music(TERM_XTRA_MUSIC_QUEST, quest_id))
         return FALSE;
-
+    
     return play_music(TERM_XTRA_MUSIC_BASIC, MUSIC_BASIC_QUEST) != 0;
 }
 
@@ -87,6 +87,13 @@ void select_floor_music(player_type *player_ptr)
 
     if (player_ptr->phase_out) {
         if (!play_music(TERM_XTRA_MUSIC_BASIC, MUSIC_BASIC_BATTLE))
+            return;
+    }
+
+    if (player_ptr->current_floor_ptr->inside_quest) {
+        if (!play_music(TERM_XTRA_MUSIC_QUEST, player_ptr->current_floor_ptr->inside_quest))
+            return;
+        if (!play_music(TERM_XTRA_MUSIC_BASIC, MUSIC_BASIC_QUEST))
             return;
     }
 
