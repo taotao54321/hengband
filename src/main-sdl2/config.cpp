@@ -28,7 +28,7 @@ namespace {
 
 std::optional<std::string> get_env_var(const std::string &name)
 {
-    const auto *value = std::getenv(name.c_str());
+    const auto *const value = std::getenv(name.c_str());
     if (!value)
         return std::nullopt;
     return std::string(value);

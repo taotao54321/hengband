@@ -106,7 +106,7 @@ Window::Window(SDL_Window *const win)
 
 Window Window::create(const std::string &title, const int x, const int y, const int w, const int h, const u32 flags)
 {
-    auto *win = SDL_CreateWindow(title.c_str(), x, y, w, h, flags);
+    auto *const win = SDL_CreateWindow(title.c_str(), x, y, w, h, flags);
     if (!win)
         PANIC("SDL_CreateWindow() failed");
     return Window(win);
@@ -143,7 +143,7 @@ Renderer::Renderer(SDL_Renderer *const ren)
 
 Renderer Renderer::with_window(SDL_Window *const win)
 {
-    auto *ren = SDL_CreateRenderer(win, -1, 0);
+    auto *const ren = SDL_CreateRenderer(win, -1, 0);
     if (!ren)
         PANIC("SDL_CreateRenderer() failed");
     return Renderer(ren);
@@ -181,7 +181,7 @@ Texture::Texture(SDL_Texture *const tex)
 Texture Texture::create_target(SDL_Renderer *const ren, const int w, const int h)
 {
     // TODO: ピクセルフォーマットはこれが最善なのか?
-    auto *tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, w, h);
+    auto *const tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, w, h);
     if (!tex)
         PANIC("SDL_CreateTexture() failed");
     return Texture(tex);
@@ -189,7 +189,7 @@ Texture Texture::create_target(SDL_Renderer *const ren, const int w, const int h
 
 Texture Texture::from_surface(SDL_Renderer *const ren, SDL_Surface *const surf)
 {
-    auto *tex = SDL_CreateTextureFromSurface(ren, surf);
+    auto *const tex = SDL_CreateTextureFromSurface(ren, surf);
     if (!tex)
         PANIC("SDL_CreateTextureFromSurface() failed");
     return Texture(tex);
@@ -226,7 +226,7 @@ Surface::Surface(SDL_Surface *const surf)
 
 Surface Surface::create(const int w, const int h)
 {
-    auto *surf = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
+    auto *const surf = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
     if (!surf)
         PANIC("SDL_CreateRGBSurfaceWithFormat() failed");
     return Surface(surf);
@@ -259,11 +259,11 @@ Surface Surface::create_tiled(SDL_Surface *const tile, const int w, const int h)
 
 Surface Surface::from_bytes(const u8 *const buf, const std::size_t len)
 {
-    auto *rdr = SDL_RWFromConstMem(buf, len);
+    auto *const rdr = SDL_RWFromConstMem(buf, len);
     if (!rdr)
         PANIC("SDL_RWFromConstMem() failed");
 
-    auto *surf = IMG_Load_RW(rdr, 1);
+    auto *const surf = IMG_Load_RW(rdr, 1);
     if (!surf)
         PANIC("IMG_Load_RW() failed");
 

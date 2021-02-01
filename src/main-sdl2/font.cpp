@@ -46,7 +46,7 @@ public:
     {
         (void)this;
 
-        auto *pat_raw = FcNameParse(reinterpret_cast<const FcChar8 *>(name.data()));
+        auto *const pat_raw = FcNameParse(reinterpret_cast<const FcChar8 *>(name.data()));
         if (!pat_raw)
             return std::nullopt;
         FontConfigPattern pat(pat_raw);
@@ -56,12 +56,12 @@ public:
         FcDefaultSubstitute(pat.get());
 
         FcResult result;
-        auto *match_raw = FcFontMatch(nullptr, pat.get(), &result);
+        auto *const match_raw = FcFontMatch(nullptr, pat.get(), &result);
         if (!match_raw)
             return std::nullopt;
         FontConfigPattern match(match_raw);
 
-        auto *s = FcPatternFormat(match.get(), reinterpret_cast<const FcChar8 *>("%{file}"));
+        auto *const s = FcPatternFormat(match.get(), reinterpret_cast<const FcChar8 *>("%{file}"));
         if (!s)
             return std::nullopt;
         std::string path(reinterpret_cast<char *>(s));
@@ -154,7 +154,7 @@ Rect Font::calc_rect(const int c, const int r, const int ncol, const int nrow) c
 
 Surface Font::render(const std::string &text, Color fg, Color bg) const
 {
-    auto *surf = TTF_RenderUTF8_Shaded(font_, text.c_str(), fg.to_sdl_color(), bg.to_sdl_color());
+    auto *const surf = TTF_RenderUTF8_Shaded(font_, text.c_str(), fg.to_sdl_color(), bg.to_sdl_color());
     if (!surf)
         PANIC("TTF_RenderUTF8_Shaded() failed");
     return Surface(surf);

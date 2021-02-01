@@ -120,7 +120,7 @@ void send_keys(const std::string &keys)
 // ワイド文字の欠片は空白に変換される
 std::string read_term(const int term_id, const int c, const int r, const int n)
 {
-    const auto *term = &terms[term_id];
+    const auto *const term = &terms[term_id];
 
     std::string euc(&term->scr->c[r][c], n);
     ALL(std::replace, euc, CH_WALL, '#');
@@ -192,7 +192,7 @@ void window_redraw(const int term_id)
     const auto &win = wins[term_id];
     win.term_clear();
 
-    auto *term = &terms[term_id];
+    auto *const term = &terms[term_id];
     term_activate(term);
     term_redraw();
 
@@ -666,7 +666,7 @@ extern "C" void init_sdl2(int /*argc*/, char ** /*argv*/)
         const auto [ncol, nrow] = win.term_size();
         wins.emplace_back(std::move(win));
 
-        auto *term = &terms[i];
+        auto *const term = &terms[i];
         term_init(term, ncol, nrow, 4096);
         term->soft_cursor = true;
         term->attr_blank = TERM_WHITE;
