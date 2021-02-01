@@ -94,6 +94,9 @@ void send_key(const char key)
     // 順序が入れ替わってしまう。TEXTINPUT は長いテキストを複数のイベントに分割
     // するため。
 
+    // ゲーム側では angband_term[0].key_queue しか見ていないらしい。
+    // が、z-term.c 内に Term 経由でアクセスするコードがあるので一応 Term を使っておく。
+
     const auto next_idx = [](const u16 i) -> u16 { return i + 1 == Term->key_size ? 0 : i + 1; };
 
     // キーバッファが一杯なら入力を捨てる
