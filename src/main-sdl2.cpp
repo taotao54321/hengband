@@ -90,9 +90,10 @@ int current_term_id() { return *static_cast<int *>(Term->data); }
 void send_key(const char key)
 {
     // Windows ドライバと同様、自前でキューを操作する。
-    // 逆順に term_key_push() する方法だと長い日本語を入力したときにテキストの
-    // 順序が入れ替わってしまう。TEXTINPUT は長いテキストを複数のイベントに分割
-    // するため。
+    // 旧 X11 ドライバのように逆順に term_key_push() する方法だと
+    // macro_running() が誤動作するのと、長い日本語を入力したときにテキストの順
+    // 序が入れ替わる問題がある(SDL_TEXTINPUT は長いテキストを複数のイベントに
+    // 分割するため)。
 
     // ゲーム側では angband_term[0].key_queue しか見ていないらしい。
     // が、z-term.c 内に Term 経由でアクセスするコードがあるので一応 Term を使っておく。
@@ -112,6 +113,10 @@ void send_key(const char key)
 // ゲーム側へキー列を送る
 void send_keys(const std::string &keys)
 {
+    // キュー容量の検査は行わない。長い日本語を入力したときは複数の
+    // SDL_TEXTINPUT イベントに分割されるので、それを含めてアトミックに処理する
+    // のはどのみち難しいため。
+
     for (const auto key : keys)
         send_key(key);
 }
