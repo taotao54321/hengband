@@ -118,6 +118,8 @@ private:
     // 壁画像テクスチャを作る。
     [[nodiscard]] Texture init_tex_wall() const;
 
+    void update_button_rects();
+
     [[nodiscard]] std::vector<ButtonVisual> init_buttons_window() const;
     [[nodiscard]] std::optional<ButtonVisual> init_button_bgm() const;
     [[nodiscard]] std::optional<ButtonVisual> init_button_se() const;

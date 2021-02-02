@@ -176,6 +176,22 @@ Texture GameWindow::init_tex_wall() const
     return surf.to_texture(ren_.get());
 }
 
+void GameWindow::update_button_rects()
+{
+    if (!is_main_)
+        return;
+
+    const int right = client_area_size().first;
+
+    for (const auto i : IRANGE(1, 8)) {
+        const int x = right - 32 * (8 - i);
+        buttons_window_[i - 1].rect = Rect(x, 0, 32, 32);
+    }
+
+    button_bgm_->rect = Rect(right - 32 * 10, 0, 32, 32);
+    button_se_->rect = Rect(right - 32 * 9, 0, 32, 32);
+}
+
 std::vector<ButtonVisual> GameWindow::init_buttons_window() const
 {
     constexpr std::pair<const u8 *, std::size_t> IMGS[]{
@@ -192,15 +208,11 @@ std::vector<ButtonVisual> GameWindow::init_buttons_window() const
     if (!is_main_)
         return {};
 
-    const int right = client_area_size().first;
-
     std::vector<ButtonVisual> buttons;
     for (const auto i : IRANGE(1, 8)) {
-        const int x = right - 32 * (8 - i);
-        const Rect rect(x, 0, 32, 32);
         const auto [buf, len] = IMGS[i];
         auto tex = Surface::from_bytes(buf, len).to_texture(ren_.get());
-        buttons.emplace_back(rect, std::move(tex));
+        buttons.emplace_back(Rect(0, 0, 0, 0), std::move(tex));
     }
 
     return buttons;
@@ -211,12 +223,9 @@ std::optional<ButtonVisual> GameWindow::init_button_bgm() const
     if (!is_main_)
         return std::nullopt;
 
-    const int right = client_area_size().first;
-
-    const Rect rect(right - 32 * 10, 0, 32, 32);
     auto tex = Surface::from_bytes(BGM_PNG, std::size(BGM_PNG)).to_texture(ren_.get());
 
-    return ButtonVisual{ rect, std::move(tex) };
+    return ButtonVisual{ Rect(0, 0, 0, 0), std::move(tex) };
 }
 
 std::optional<ButtonVisual> GameWindow::init_button_se() const
@@ -224,12 +233,9 @@ std::optional<ButtonVisual> GameWindow::init_button_se() const
     if (!is_main_)
         return std::nullopt;
 
-    const int right = client_area_size().first;
-
-    const Rect rect(right - 32 * 9, 0, 32, 32);
     auto tex = Surface::from_bytes(SE_PNG, std::size(SE_PNG)).to_texture(ren_.get());
 
-    return ButtonVisual{ rect, std::move(tex) };
+    return ButtonVisual{ Rect(0, 0, 0, 0), std::move(tex) };
 }
 
 GameWindow::GameWindow(const bool is_main, Font font, Window win)
@@ -246,6 +252,8 @@ GameWindow::GameWindow(const bool is_main, Font font, Window win)
     , button_se_(init_button_se())
 {
     if (is_main_) {
+        update_button_rects();
+
         const auto [w_min, h_min] = client_area_size_for(MAIN_WIN_NCOL_MIN, MAIN_WIN_NROW_MIN);
         SDL_SetWindowMinimumSize(win_.get(), w_min, h_min);
     }
@@ -532,6 +540,9 @@ UiElement GameWindow::ui_element_at(const int x, const int y) const
 
 std::pair<int, int> GameWindow::on_size_change(const int w, const int h)
 {
+    if (is_main_)
+        update_button_rects();
+
     // 端末画面サイズが変わる場合、端末画面テクスチャを作り直す
     const auto ncnr_new = term_size_for(w, h);
     if (ncnr_ != ncnr_new) {
