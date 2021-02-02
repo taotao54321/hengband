@@ -309,7 +309,7 @@ concptr make_screen_dump(player_type *creature_ptr, void (*process_autopick_file
             case '\'':
                 cc = "&#39;";
                 break;
-#if defined(WINDOWS)
+#ifdef WINDOWS
             case 0x1f:
                 c = '.';
                 break;
