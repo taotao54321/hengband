@@ -24,7 +24,9 @@ std::map<std::string, std::vector<Music>> load_musics(const std::string &dir_xtr
 {
     const auto dir = FORMAT("{}/music", dir_xtra);
 
-    const auto ini = inifile_parse(FORMAT("{}/music.cfg", dir));
+    auto ini = inifile_parse(FORMAT("{}/music_debug.cfg", dir));
+    if (ini.empty())
+        ini = inifile_parse(FORMAT("{}/music.cfg", dir));
 
     std::map<std::string, std::vector<Music>> musics;
     for (const auto &[sect_name, sect_map] : ini) {
