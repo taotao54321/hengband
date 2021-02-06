@@ -60,7 +60,9 @@ std::map<std::string, std::vector<Sound>> load_sounds(const std::string &dir_xtr
 
     const auto dir = FORMAT("{}/sound", dir_xtra);
 
-    const auto ini = inifile_parse(FORMAT("{}/sound.cfg", dir));
+    auto ini = inifile_parse(FORMAT("{}/sound_debug.cfg", dir));
+    if (ini.empty())
+        ini = inifile_parse(FORMAT("{}/sound.cfg", dir));
 
     const auto it = ini.find(SECT_NAME);
     if (it == std::end(ini))
