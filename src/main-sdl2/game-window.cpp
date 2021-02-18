@@ -3,11 +3,13 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "main-sdl2/asset.hpp"
+#include "main-sdl2/encoding.hpp"
 #include "main-sdl2/font.hpp"
 #include "main-sdl2/game-window.hpp"
 #include "main-sdl2/prelude.hpp"
@@ -417,29 +419,46 @@ void GameWindow::term_draw_text(const int c, const int r, const std::string &tex
     if (SDL_SetRenderTarget(ren_.get(), tex_term_.get()) != 0)
         PANIC("SDL_SetRenderTarget() failed");
 
-    const auto [x_orig, y_orig] = font_.cr2xy(c, r);
+    const auto y_dst = font_.r2y(r);
 
-    if (ALL(std::all_of, text, [](const char c) { return ASCII_MIN <= c && c <= ASCII_MAX; })) {
-        // text が ASCII 表示可能文字のみからなる場合、テクスチャキャッシュを使って
-        // 高速に描画する。
-        for (const auto i : IRANGE(0, int(std::size(text)))) {
-            const auto x_src = font_.w() * (text[i] - ASCII_MIN);
-            const auto x_dst = x_orig + font_.w() * i;
+    auto c_cur = c;
+    for (std::string_view s(text); !s.empty();) {
+        const auto n = utf8_char_byte_count(s);
+        if (n == 0)
+            break;
+
+        const auto x_dst = font_.w() * c_cur;
+
+        if (n == 1) {
+            // ASCII 文字ならテクスチャキャッシュを使って高速に描画する。
+            // 表示不能文字はスペースに置換する。
+            const auto ch = (ASCII_MIN <= s[0] && s[0] <= ASCII_MAX) ? s[0] : ' ';
+            const auto x_src = font_.w() * (ch - ASCII_MIN);
+
             const SDL_Rect rect_src{ x_src, 0, font_.w(), font_.h() };
-            const SDL_Rect rect_dst{ x_dst, y_orig, font_.w(), font_.h() };
+            const SDL_Rect rect_dst{ x_dst, y_dst, font_.w(), font_.h() };
             if (SDL_SetTextureColorMod(tex_ascii_.get(), color.r(), color.g(), color.b()) != 0)
                 PANIC("SDL_SetTextureColorMod() failed");
             if (SDL_RenderCopy(ren_.get(), tex_ascii_.get(), &rect_src, &rect_dst) != 0)
                 PANIC("SDL_RenderCopy() failed");
-        }
-    } else {
-        // text が非 ASCII を含む場合はナイーブな方法で描画する。
-        const auto surf = font_.render(text, color, COLOR_BG);
-        const auto tex = surf.to_texture(ren_.get());
 
-        const SDL_Rect rect{ x_orig, y_orig, surf.get()->w, surf.get()->h };
-        if (SDL_RenderCopy(ren_.get(), tex.get(), nullptr, &rect) != 0)
-            PANIC("SDL_RenderCopy() failed");
+            c_cur += 1;
+        } else {
+            // 非 ASCII 文字ならナイーブな方法で描画する。
+            // XXX: 文字幅は 2 と仮定する。
+            char buf[5]{}; // 0終端用
+            std::copy(std::begin(s), std::begin(s) + n, buf);
+            const auto surf = font_.render(buf, color, COLOR_BG);
+            const auto tex = surf.to_texture(ren_.get());
+
+            const SDL_Rect rect{ x_dst, y_dst, surf.get()->w, surf.get()->h };
+            if (SDL_RenderCopy(ren_.get(), tex.get(), nullptr, &rect) != 0)
+                PANIC("SDL_RenderCopy() failed");
+
+            c_cur += 2;
+        }
+
+        s = s.substr(n);
     }
 }
 

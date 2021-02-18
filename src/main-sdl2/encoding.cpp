@@ -1,6 +1,7 @@
 #include "autoconf.h"
 #ifdef USE_SDL2
 
+#include <algorithm>
 #include <cerrno>
 #include <string>
 #include <string_view>
@@ -129,5 +130,34 @@ std::string utf8_to_euc_lossy(const std::string_view utf8, const char ch_replace
     return conv_utf8_to_euc().convert_lossy(utf8, ch_replace);
 }
 // clang-format on
+
+int utf8_char_byte_count(const std::string_view utf8)
+{
+    if (utf8.empty())
+        return 0;
+
+    const auto first = u8(utf8[0]);
+
+    int n;
+    if (first <= 0x7F)
+        n = 1;
+    else if ((first >> 5) == 0b110)
+        n = 2;
+    else if ((first >> 4) == 0b1110)
+        n = 3;
+    else if ((first >> 3) == 0b11110)
+        n = 4;
+    else
+        return 0;
+
+    if (n > int(std::size(utf8)))
+        return 0;
+
+    const auto valid = std::all_of(std::begin(utf8) + 1, std::begin(utf8) + n, [](const char ch) { return (u8(ch) >> 6) == 0b10; });
+    if (!valid)
+        return 0;
+
+    return n;
+}
 
 #endif // USE_SDL2

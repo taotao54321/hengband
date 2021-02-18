@@ -622,8 +622,8 @@ extern "C" errr term_text_sdl2(const TERM_LEN c, const TERM_LEN r, const int n, 
 
     const Color color(angband_color_table[attr][1], angband_color_table[attr][2], angband_color_table[attr][3], 0xFF);
 
-    // 最初に draw_blanks() を行わないと画面にゴミが残ることがある。
-    // draw_text() の描画範囲はテキスト内の文字によって変動するため。
+    // 最初に term_fill_rect() を行わないと画面にゴミが残ることがある。
+    // term_draw_text() の描画範囲はテキスト内の文字によって変動するため。
     // (等幅フォントであっても高さは文字ごとに異なる)
     // XXX: バイト数と文字幅が一致すると仮定しているが、これは厳密には正しくない
     win.term_fill_rect(c, r, n, 1, Color(0, 0, 0, 0xFF));

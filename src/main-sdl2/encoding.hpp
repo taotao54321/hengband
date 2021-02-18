@@ -17,3 +17,7 @@ std::pair<std::string, std::size_t> utf8_to_euc(std::string_view utf8);
 
 std::string euc_to_utf8_lossy(std::string_view euc, char ch_replace);
 std::string utf8_to_euc_lossy(std::string_view utf8, char ch_replace);
+
+// UTF-8 文字列の最初の文字のバイト数を返す。
+// 空文字列もしくは非 UTF-8 文字列が渡されたら 0 を返す。
+int utf8_char_byte_count(std::string_view utf8);
